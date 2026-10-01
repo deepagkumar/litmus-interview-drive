@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<script>
+// Same one-time cache-busting redirect as the candidate page, so admins always get the latest version.
+(function(){
+  if (location.search.indexOf('_cb=') === -1) {
+    var sep = location.search ? '&' : '?';
+    location.replace(location.pathname + location.search + sep + '_cb=' + Date.now());
+  }
+})();
+</script>
+<title>Litmus Admin</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/app.css?v=4">
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <div class="brand"><img class="logo" src="assets/litmus-logo.svg" alt="Litmus"><span class="bar"></span><span>Admin</span></div>
+    <span style="margin-left:auto"></span>
+    <button class="btn small secondary" id="lockBtn" type="button" hidden>Lock</button>
+  </div>
+</header>
+
+<main>
+  <!-- ---------- unlock ---------- -->
+  <div class="card" id="lockCard">
+    <h1>Admin</h1>
+    <p>Enter the admin key configured in the Apps Script project (Script Properties → <code>ADMIN_KEY</code>).</p>
+    <form class="fields" id="lockForm" autocomplete="off">
+      <div>
+        <label for="adminKey">Admin key</label>
+        <input id="adminKey" type="password" autocomplete="current-password">
+        <div class="err" id="lockErr"></div>
+      </div>
+      <div style="align-self:start;padding-top:27px"><button class="btn" type="submit" id="unlockBtn">Unlock</button></div>
+    </form>
+  </div>
+
+  <!-- ---------- drive list ---------- -->
+  <div class="card" id="listCard" hidden>
+    <div class="toolbar-row">
+      <h2 class="sec">Interview drives</h2>
+      <button class="btn small secondary" id="refreshBtn" type="button">Refresh</button>
+      <button class="btn small" id="newBtn" type="button">New drive</button>
+    </div>
+    <div class="tbl"><table class="drivetable">
+      <thead><tr><th>Drive</th><th>Status</th><th>Questions</th><th>Time</th><th>Submissions</th><th>Updated</th></tr></thead>
+      <tbody id="driveRows"><tr><td colspan="6">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="status" id="listStatus"></div>
+  </div>
+
+  <!-- ---------- editor ---------- -->
+  <div class="card" id="editorCard" hidden>
+    <div class="toolbar-row">
+      <h2 class="sec" id="editorTitle">New interview drive</h2>
+      <button class="btn small secondary" id="cancelEdit" type="button">Cancel</button>
+    </div>
+    <div class="steps"><span id="step1" class="on">1 · Details &amp; questions</span><span id="step2">2 · Review &amp; finalize</span></div>
+
+    <div id="formStep">
+      <div class="fields">
+        <div class="full">
+          <label for="fTitle">Drive title <span class="req">*</span></label>
+          <input id="fTitle" type="text" maxlength="200" placeholder="e.g. Java Backend Screening – Round 1">
+        </div>
+        <div class="full">
+          <label for="fRole">Role / subtitle</label>
+          <input id="fRole" type="text" maxlength="200" placeholder="e.g. Senior Backend Engineer (5+ years)">
+        </div>
+        <div class="full">
+          <label for="fDescription">Welcome text</label>
+          <textarea id="fDescription" maxlength="4000" placeholder="Shown to candidates when they select this drive."></textarea>
+          <div class="help">Supports <code>`code`</code>, <code>**bold**</code> and <code>*italic*</code>. Blank line = new paragraph.</div>
+        </div>
+        <div class="full">
+          <label for="fInstructions">Drive-specific instructions</label>
+          <textarea id="fInstructions" maxlength="4000" placeholder="One instruction per line, e.g.&#10;Assume Java 21 unless a question says otherwise.&#10;Answer without running the code or using AI tools."></textarea>
+          <div class="help">One per line. Shown as a bulleted list, alongside the standard rules (timer, full screen, submission).</div>
+        </div>
+        <div class="full">
+          <label for="fNotice">Highlighted notice</label>
+          <textarea id="fNotice" maxlength="2000" style="min-height:60px" placeholder="Optional, e.g. how answers are evaluated."></textarea>
+        </div>
+        <div>
+          <label for="fDuration">Time limit (minutes) <span class="req">*</span></label>
+          <input id="fDuration" type="number" min="1" max="300" step="1">
+        </div>
+        <div>
+          <label for="fCount">Questions per candidate <span class="req">*</span></label>
+          <input id="fCount" type="number" min="1" step="1">
+          <div class="help" id="countHelp">Upload questions first.</div>
+        </div>
+        <div class="full">
+          <label class="check"><input type="checkbox" id="fShuffle"> Shuffle question order for each candidate</label>
+        </div>
+        <div class="full">
+          <label for="fFile">Questions (JSON) <span class="req">*</span></label>
+          <input id="fFile" type="file" accept=".json,application/json">
+          <details class="paste">
+            <summary>…or paste JSON</summary>
+            <textarea id="fPaste" style="min-height:160px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;margin-top:8px" spellcheck="false"></textarea>
+            <button class="btn small secondary" id="loadPaste" type="button" style="margin-top:8px">Load pasted JSON</button>
+          </details>
+          <div class="help">Format: see the <a href="samples/dotnet-screening-round1.json" download>sample file</a> and the README. Drive details in the file (title, time limit…) fill any empty fields above.</div>
+          <div id="qStatus"></div>
+        </div>
+      </div>
+      <div class="startrow">
+        <button class="btn" id="reviewBtn" type="button">Review drive →</button>
+        <span class="status err" id="formErr"></span>
+      </div>
+    </div>
+
+    <div id="reviewStep" hidden>
+      <dl class="summary" id="summary"></dl>
+      <div class="fields"><div class="full"><label class="check"><input type="checkbox" id="fOpen" checked> Open for candidates as soon as it's saved</label></div></div>
+      <div class="startrow">
+        <button class="btn secondary" id="backBtn" type="button">← Back to edit</button>
+        <button class="btn" id="finalizeBtn" type="button">Finalize &amp; save to Drive</button>
+        <button class="btn secondary" id="downloadDraft" type="button">Download JSON</button>
+        <span class="status" id="saveStatus"></span>
+      </div>
+      <h2 class="sec" style="margin-top:28px">Candidate preview</h2>
+      <p class="hint" id="previewHint"></p>
+    </div>
+  </div>
+  <div id="preview" hidden></div>
+
+  <!-- ---------- saved ---------- -->
+  <div class="card" id="doneCard" hidden>
+    <h1>Drive saved</h1>
+    <p id="doneText"></p>
+    <label class="hint" for="doneLink">Direct link for candidates (pre-selects this drive):</label>
+    <div class="linkbox"><input id="doneLink" readonly><button class="btn small secondary" id="copyDone" type="button">Copy</button></div>
+    <div class="startrow"><button class="btn" id="doneBack" type="button">Back to drives</button></div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="assets/config.js?v=4"></script>
+<script src="assets/common.js?v=4"></script>
+<script>
+(function(){
+  const A = window.App;
+  const $ = id => document.getElementById(id);
+  const KEY_STORE = 'interviewDriveAdminKey';
+  let adminKey = '';
+  let drives = [];
+  let editing = null;     // {id, status, createdAt} when editing an existing drive; null for a new one
+  let bank = null;        // {questions, source} — the loaded question bank
+  let pending = null;     // drive object built for review
+
+  document.title = (A.config.appName || 'Litmus') + ' Admin';
+  const show = (...ids) => ['lockCard','listCard','editorCard','doneCard','preview'].forEach(id => { $(id).hidden = ids.indexOf(id) === -1; });
+  const candidateLink = id => new URL('index.html?drive=' + encodeURIComponent(id), location.href.split('?')[0]).href;
+  const fmtDate = s => s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+
+  function adminApi(action, payload){
+    return A.api(action, Object.assign({ adminKey }, payload || {})).catch(e => {
+      if (e.code === 'unauthorized') lock('Your admin key was rejected. Please unlock again.');
+      throw e;
+    });
+  }
+  function download(name, text){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  async function copy(text, statusEl){
+    try { await navigator.clipboard.writeText(text); statusEl.className = 'status ok'; statusEl.textContent = 'Copied: ' + text; }
+    catch (e) { statusEl.className = 'status'; statusEl.textContent = text; }
+  }
+
+  // ---------- unlock / lock ----------
+  async function unlock(key){
+    adminKey = key;
+    $('unlockBtn').disabled = true; $('lockErr').textContent = '';
+    try {
+      const r = await A.api('admin.listDrives', { adminKey });
+      try { sessionStorage.setItem(KEY_STORE, key); } catch (e) {}
+      $('lockBtn').hidden = false;
+      drives = r.drives || [];
+      renderList(); show('listCard');
+    } catch (e) {
+      adminKey = '';
+      try { sessionStorage.removeItem(KEY_STORE); } catch (e2) {}
+      $('lockErr').textContent = e.message;
+      show('lockCard');
+    } finally { $('unlockBtn').disabled = false; }
+  }
+  function lock(msg){
+    adminKey = '';
+    try { sessionStorage.removeItem(KEY_STORE); } catch (e) {}
+    $('adminKey').value = ''; $('lockErr').textContent = msg || '';
+    $('lockBtn').hidden = true; show('lockCard');
+  }
+  $('lockForm').addEventListener('submit', e => { e.preventDefault(); const k = $('adminKey').value.trim(); if (k) unlock(k); });
+  $('lockBtn').addEventListener('click', () => lock());
+
+  // ---------- drive list ----------
+  async function refreshList(){
+    $('listStatus').className = 'status'; $('listStatus').textContent = 'Refreshing…';
+    try { drives = (await adminApi('admin.listDrives')).drives || []; renderList(); $('listStatus').textContent = ''; }
+    catch (e) { $('listStatus').className = 'status err'; $('listStatus').textContent = e.message; }
+  }
+  function renderList(){
+    if (!drives.length) { $('driveRows').innerHTML = '<tr><td colspan="6">No drives yet. Press <strong>New drive</strong> to create one.</td></tr>'; return; }
+    $('driveRows').innerHTML = drives.map(d => `<tr>
+      <td class="title"><strong>${A.esc(d.title)}</strong><small>${A.esc(d.id)}</small>
+        <div class="actions">
+          <button type="button" class="btn small secondary" data-act="edit" data-id="${A.esc(d.id)}">Edit</button>
+          <button type="button" class="btn small secondary" data-act="toggle" data-id="${A.esc(d.id)}">${d.status === 'open' ? 'Close' : 'Reopen'}</button>
+          <button type="button" class="btn small secondary" data-act="link" data-id="${A.esc(d.id)}">Copy link</button>
+          <button type="button" class="btn small secondary" data-act="json" data-id="${A.esc(d.id)}">JSON</button>
+        </div></td>
+      <td><span class="badge ${d.status === 'open' ? 'open' : 'closed'}">${d.status === 'open' ? 'Open' : 'Closed'}</span></td>
+      <td>${d.questionCount}${d.bankSize !== d.questionCount ? ' of ' + d.bankSize : ''}</td>
+      <td>${d.durationMinutes} min</td>
+      <td>${d.folderUrl ? `<a href="${A.esc(d.folderUrl)}" target="_blank" rel="noopener">${d.submissionCount}</a>` : d.submissionCount}</td>
+      <td>${A.esc(fmtDate(d.updatedAt))}</td></tr>`).join('');
+  }
+  $('refreshBtn').addEventListener('click', refreshList);
+  $('driveRows').addEventListener('click', async e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = b.dataset.id, d = drives.find(x => x.id === id);
+    const st = $('listStatus');
+    if (b.dataset.act === 'link') return copy(candidateLink(id), st);
+    b.disabled = true;
+    try {
+      if (b.dataset.act === 'toggle') {
+        const status = d.status === 'open' ? 'closed' : 'open';
+        await adminApi('admin.setStatus', { driveId: id, status });
+        d.status = status; renderList();
+        st.className = 'status ok'; st.textContent = '"' + d.title + '" is now ' + status + '.';
+      } else {
+        const full = (await adminApi('admin.getDrive', { driveId: id })).drive;
+        if (b.dataset.act === 'json') download('drive-' + id + '.json', JSON.stringify(full, null, 2));
+        else openEditor(full);
+      }
+    } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+    finally { b.disabled = false; }
+  });
+
+  // ---------- editor: details + questions ----------
+  const F = { title: 'fTitle', role: 'fRole', description: 'fDescription', notice: 'fNotice' };
+  function openEditor(d){
+    editing = d ? { id: d.id, status: d.status, createdAt: d.createdAt } : null;
+    pending = null;
+    $('editorTitle').textContent = d ? 'Edit: ' + d.title : 'New interview drive';
+    Object.keys(F).forEach(k => { $(F[k]).value = (d && d[k]) || ''; });
+    $('fInstructions').value = d && d.instructions ? d.instructions.join('\n') : '';
+    $('fDuration').value = d ? d.durationMinutes : '';
+    $('fCount').value = d ? d.questionCount : '';
+    $('fShuffle').checked = !!(d && d.shuffle);
+    $('fOpen').checked = d ? d.status === 'open' : true;
+    $('fFile').value = ''; $('fPaste').value = '';
+    bank = d ? { questions: d.questions, source: 'the saved drive' } : null;
+    $('qStatus').innerHTML = bank ? okMsg(A.plural(bank.questions.length, 'question') + ' loaded from the saved drive. Upload a new file to replace them.') : '';
+    $('formErr').textContent = '';
+    updateCountHelp();
+    setStep(1);
+    show('editorCard');
+    window.scrollTo({ top: 0 });
+  }
+  $('newBtn').addEventListener('click', () => openEditor(null));
+  $('cancelEdit').addEventListener('click', () => show('listCard'));
+
+  const okMsg = t => '<ul class="msgs ok"><li>✓ ' + A.esc(t) + '</li></ul>';
+  function updateCountHelp(){
+    const n = bank ? bank.questions.length : 0;
+    $('fCount').max = n || '';
+    $('countHelp').textContent = !n ? 'Upload questions first.'
+      : 'The bank has ' + A.plural(n, 'question') + '. Use fewer to give each candidate a random subset.';
+  }
+
+  function loadQuestionsText(text, source){
+    let raw;
+    try { raw = JSON.parse(text); }
+    catch (e) { $('qStatus').innerHTML = '<ul class="msgs err"><li>Not valid JSON: ' + A.esc(e.message) + '</li></ul>'; return; }
+    const r = A.normalizeDriveFile(raw);
+    if (r.errors.length) {
+      $('qStatus').innerHTML = '<ul class="msgs err">' + r.errors.slice(0, 50).map(m => '<li>' + A.esc(m) + '</li>').join('') +
+        (r.errors.length > 50 ? '<li>…and ' + (r.errors.length - 50) + ' more</li>' : '') + '</ul>';
+      return;
+    }
+    bank = { questions: r.questions, source };
+    // Drive-level fields in the file only fill fields that are still empty.
+    const filled = [];
+    Object.keys(F).forEach(k => { if (r.meta[k] && !$(F[k]).value.trim()) { $(F[k]).value = r.meta[k]; filled.push(k); } });
+    if (r.meta.instructions && !$('fInstructions').value.trim()) { $('fInstructions').value = r.meta.instructions.join('\n'); filled.push('instructions'); }
+    if (r.meta.durationMinutes && !$('fDuration').value) { $('fDuration').value = r.meta.durationMinutes; filled.push('time limit'); }
+    if (!$('fCount').value || +$('fCount').value > r.questions.length) {
+      $('fCount').value = Math.min(r.meta.questionCount || r.questions.length, r.questions.length); filled.push('questions per candidate');
+    }
+    if (typeof r.meta.shuffle === 'boolean' && !editing) $('fShuffle').checked = r.meta.shuffle;
+    updateCountHelp();
+    $('qStatus').innerHTML = okMsg(A.plural(r.questions.length, 'question') + ' loaded from ' + source + '.' +
+      (filled.length ? ' Also filled from the file: ' + filled.join(', ') + '.' : ''));
+  }
+  $('fFile').addEventListener('change', () => {
+    const f = $('fFile').files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { $('qStatus').innerHTML = '<ul class="msgs err"><li>File is larger than 5 MB.</li></ul>'; return; }
+    f.text().then(t => loadQuestionsText(t, f.name));
+  });
+  $('loadPaste').addEventListener('click', () => { if ($('fPaste').value.trim()) loadQuestionsText($('fPaste').value, 'pasted JSON'); });
+
+  // ---------- review ----------
+  function buildDrive(){
+    const errs = [];
+    const title = $('fTitle').value.trim();
+    const duration = parseInt($('fDuration').value, 10);
+    const count = parseInt($('fCount').value, 10);
+    if (!title) errs.push('Enter a drive title.');
+    if (!(duration >= 1 && duration <= 300)) errs.push('Time limit must be between 1 and 300 minutes.');
+    if (!bank) errs.push('Upload the questions JSON.');
+    else if (!(count >= 1 && count <= bank.questions.length)) errs.push('Questions per candidate must be between 1 and ' + bank.questions.length + '.');
+    if (errs.length) return { errs };
+    const d = {
+      title,
+      role: $('fRole').value.trim(),
+      description: $('fDescription').value.trim(),
+      instructions: $('fInstructions').value.split('\n').map(s => s.trim()).filter(Boolean),
+      notice: $('fNotice').value.trim(),
+      durationMinutes: duration,
+      questionCount: count,
+      shuffle: $('fShuffle').checked,
+      questions: bank.questions
+    };
+    if (editing) d.id = editing.id;
+    return { drive: d };
+  }
+  function setStep(n){
+    $('formStep').hidden = n !== 1; $('reviewStep').hidden = n !== 2; $('preview').hidden = n !== 2;
+    $('step1').className = n === 1 ? 'on' : ''; $('step2').className = n === 2 ? 'on' : '';
+  }
+  $('reviewBtn').addEventListener('click', () => {
+    const r = buildDrive();
+    if (r.errs) { $('formErr').textContent = r.errs.join(' '); return; }
+    $('formErr').textContent = '';
+    pending = r.drive;
+    const d = pending, n = d.questions.length;
+    const row = (k, v) => '<dt>' + k + '</dt><dd>' + v + '</dd>';
+    $('summary').innerHTML =
+      row('Title', A.esc(d.title)) +
+      (d.role ? row('Role', A.esc(d.role)) : '') +
+      row('Time limit', A.plural(d.durationMinutes, 'minute')) +
+      row('Questions', d.questionCount === n ? 'All ' + n + ' questions' : d.questionCount + ' randomly picked from ' + n + ' for each candidate') +
+      row('Order', d.shuffle ? 'Shuffled per candidate' : 'As in the file') +
+      (d.description ? row('Welcome text', A.paragraphs(d.description)) : '') +
+      (d.instructions.length ? row('Instructions', '<ul>' + d.instructions.map(i => '<li>' + A.inline(i) + '</li>').join('') + '</ul>') : '') +
+      (d.notice ? row('Notice', A.paragraphs(d.notice)) : '') +
+      row('Saved as', editing ? 'Update to existing drive <code>' + A.esc(editing.id) + '</code> — changes apply to candidates who start after you save.' : 'New drive');
+    $('previewHint').textContent = 'All ' + A.plural(n, 'question') + ' in the bank, exactly as candidates will see them' +
+      (d.questionCount < n || d.shuffle ? ' (each candidate gets ' + (d.questionCount < n ? 'a random ' + d.questionCount : 'them') + (d.shuffle ? ' in shuffled order' : '') + ')' : '') +
+      '. Evaluator notes (rubric) are only visible here and in submission files.';
+    $('preview').innerHTML = d.questions.map((q, i) => A.renderQuestion(q, i + 1, { label: q.id, rubric: true })).join('');
+    A.highlight($('preview'));
+    $('saveStatus').textContent = '';
+    setStep(2);
+    window.scrollTo({ top: 0 });
+  });
+  $('backBtn').addEventListener('click', () => setStep(1));
+  $('downloadDraft').addEventListener('click', () => { if (pending) download((pending.id || 'new-drive') + '.json', JSON.stringify(pending, null, 2)); });
+
+  $('finalizeBtn').addEventListener('click', async () => {
+    if (!pending) return;
+    $('finalizeBtn').disabled = true;
+    $('saveStatus').className = 'status'; $('saveStatus').textContent = 'Saving to Google Drive…';
+    try {
+      const r = await adminApi('admin.saveDrive', { drive: Object.assign({}, pending, { status: $('fOpen').checked ? 'open' : 'closed' }) });
+      const saved = r.drive;
+      $('doneText').innerHTML = '<strong>' + A.esc(saved.title) + '</strong> (' + A.esc(saved.id) + ') was saved to Google Drive and is ' +
+        (saved.status === 'open' ? '<strong>open</strong> — candidates can select it now.' : '<strong>closed</strong> — reopen it from the drive list when you are ready.');
+      $('doneLink').value = candidateLink(saved.id);
+      show('doneCard');
+      window.scrollTo({ top: 0 });
+      refreshList();
+    } catch (e) {
+      $('saveStatus').className = 'status err'; $('saveStatus').textContent = e.message;
+    } finally { $('finalizeBtn').disabled = false; }
+  });
+  $('copyDone').addEventListener('click', () => { $('doneLink').select(); copy($('doneLink').value, $('listStatus')); $('copyDone').textContent = 'Copied'; setTimeout(() => { $('copyDone').textContent = 'Copy'; }, 1500); });
+  $('doneBack').addEventListener('click', () => show('listCard'));
+
+  // ---------- boot ----------
+  let saved = ''; try { saved = sessionStorage.getItem(KEY_STORE) || ''; } catch (e) {}
+  if (saved) unlock(saved); else show('lockCard');
+})();
+</script>
+</body>
+</html>

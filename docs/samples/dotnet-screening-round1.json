@@ -1,0 +1,389 @@
+{
+  "title": ".NET Technical Screening – Round 1",
+  "role": "Senior .NET Engineer / Lead (5+ years)",
+  "description": "Welcome, and thank you for your interest in this role. Most questions show a code snippet or scenario. Read each one carefully and write your answer in your own words in the box below it.",
+  "instructions": [
+    "Assume .NET 8 and C# 12 unless a question says otherwise.",
+    "Answer independently, without running the code, searching online, or using AI tools.",
+    "Explain your reasoning, not just the final answer. Partial answers with clear thinking still earn credit."
+  ],
+  "notice": "**How your answers are evaluated:** our interview team reviews every response, and we use AI to help assess the answers. Final decisions are always made by people.",
+  "durationMinutes": 45,
+  "questionCount": 20,
+  "shuffle": false,
+  "questions": [
+    {
+      "id": "q1",
+      "title": "The high-value transaction that skipped validation",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A payments team has this base class in a shared NuGet package:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public class TransactionProcessor\n{\n    public void Process(decimal amount)\n    {\n        Validate(amount);\n        Console.WriteLine($\"Processed {amount}\");\n    }\n\n    protected void Validate(decimal amount)\n    {\n        if (amount <= 0) throw new ArgumentException(\"Invalid amount\");\n    }\n}"
+        },
+        {
+          "type": "text",
+          "text": "A new team writes:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public class HighValueProcessor : TransactionProcessor\n{\n    protected void Validate(decimal amount)   // compiler warning ignored\n    {\n        if (amount <= 0) throw new ArgumentException(\"Invalid amount\");\n        if (amount > 1_000_000) throw new ArgumentException(\"Needs approval\");\n    }\n}"
+        },
+        {
+          "type": "text",
+          "text": "QA files a bug: a `$5,000,000` transaction went through `HighValueProcessor.Process()` with **no approval error**. The developer insists their validation code is correct — and it is, in isolation."
+        }
+      ],
+      "ask": "Why didn't the new rule fire? What is the minimum change to the base class and the derived class to fix it?"
+    },
+    {
+      "id": "q2",
+      "title": "Predict the output: notifier channels",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public class Notifier\n{\n    public virtual string Channel() => \"Base\";\n    public string Describe() => $\"Sending via {Channel()}\";\n}\n\npublic class EmailNotifier : Notifier\n{\n    public override string Channel() => \"Email\";\n}\n\npublic class SmsNotifier : EmailNotifier\n{\n    public new string Channel() => \"SMS\";\n}\n\n// ---\nNotifier a = new SmsNotifier();\nEmailNotifier b = new SmsNotifier();\nSmsNotifier c = new SmsNotifier();\n\nConsole.WriteLine(a.Channel());\nConsole.WriteLine(b.Channel());\nConsole.WriteLine(c.Channel());\nConsole.WriteLine(c.Describe());"
+        }
+      ],
+      "ask": "Write the four output lines. Then explain in one sentence the rule that produced the difference between line 3 and line 4."
+    },
+    {
+      "id": "q3",
+      "title": "Repository crashes on construction",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public abstract class RepositoryBase\n{\n    protected RepositoryBase()\n    {\n        Initialize();            // template hook\n    }\n    protected abstract void Initialize();\n}\n\npublic class LoanRepository : RepositoryBase\n{\n    private readonly List<string> _cache = new();\n    private readonly string _connectionString;\n\n    public LoanRepository(string connectionString)\n    {\n        _connectionString = connectionString;\n    }\n\n    protected override void Initialize()\n    {\n        _cache.Add(_connectionString.ToUpper());\n    }\n}"
+        },
+        {
+          "type": "text",
+          "text": "`new LoanRepository(\"Server=prod;\")` throws `NullReferenceException` on the `_cache.Add(...)` line — in production, on every single call."
+        }
+      ],
+      "ask": "Walk through the exact construction order and name which field is null and why. Then propose a design that keeps the \"initialize hook\" idea but is safe."
+    },
+    {
+      "id": "q4",
+      "title": "Predict the output: comparing values",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public struct Point { public int X, Y; }\npublic record class Money(decimal Amount, string Currency);\npublic record struct Coord(int X, int Y);\n\nvar p1 = new Point { X = 1, Y = 2 };\nvar p2 = new Point { X = 1, Y = 2 };\nvar m1 = new Money(10m, \"USD\");\nvar m2 = new Money(10m, \"USD\");\nvar c1 = new Coord(1, 2);\nvar c2 = new Coord(1, 2);\n\nConsole.Write(p1.Equals(p2));\nConsole.Write(m1 == m2);\nConsole.Write(ReferenceEquals(m1, m2));\nConsole.Write(c1 == c2);"
+        },
+        {
+          "type": "text",
+          "text": "**Which line of output is produced?**"
+        },
+        {
+          "type": "options",
+          "items": [
+            "`TrueTrueTrueTrue`",
+            "`TrueTrueFalseTrue`",
+            "`FalseTrueFalseTrue`",
+            "`TrueFalseFalseFalse`",
+            "`FalseFalseFalseFalse`"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q5",
+      "title": "Rate-change notifications in a long-running service",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A rate-change notification service:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public class RateService\n{\n    public event EventHandler<RateChangedArgs> RateChanged;\n    public void Publish(RateChangedArgs e) => RateChanged?.Invoke(this, e);\n}\n\npublic class QuoteWidget\n{\n    public QuoteWidget(RateService svc) => svc.RateChanged += OnRateChanged;\n    private void OnRateChanged(object s, RateChangedArgs e) { /* redraw */ }\n}"
+        },
+        {
+          "type": "text",
+          "text": "`RateService` is a **singleton**. `QuoteWidget` is created per user session. After a week of uptime: memory grows monotonically, and a single downstream subscriber throwing an exception means **later subscribers never get the event**."
+        }
+      ],
+      "ask": "Diagnose both problems. Then redesign — and justify whether you'd keep `event`, move to `IObservable<T>`, or use a message bus/channel."
+    },
+    {
+      "id": "q6",
+      "title": "Reviewing a constructor with many parameters",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A teammate adds an 11th optional parameter to this constructor:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public HttpRequestSpec(string url, string method = \"GET\", int timeoutSec = 30,\n    bool retry = false, int retryCount = 3, string contentType = \"application/json\",\n    bool compress = false, string authToken = null, bool followRedirects = true,\n    int maxRedirects = 5, bool validateSsl = true) { }"
+        },
+        {
+          "type": "text",
+          "text": "Call sites in the wild look like:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "new HttpRequestSpec(\"https://api/x\", \"POST\", 60, true, 5, \"application/json\", false, token, true, 5, true);"
+        }
+      ],
+      "ask": "Name three concrete failure modes of this design as it exists today. Then show how a Builder (or a modern C# alternative) fixes them — and say when a Builder would be *over-engineering* here."
+    },
+    {
+      "id": "q7",
+      "title": "Pick the right collection",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "For each scenario, name the structure and justify in one line:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "#",
+            "Scenario"
+          ],
+          "rows": [
+            [
+              "A",
+              "Deduplicate 2 million loan numbers read from a file; you only need \"have I seen this?\""
+            ],
+            [
+              "B",
+              "Map `loanNumber → LoanSummary`, single-threaded batch job, ~10k entries, need fastest lookup"
+            ],
+            [
+              "C",
+              "Same map, but read and written by 200 concurrent request threads"
+            ],
+            [
+              "D",
+              "Need to answer \"give me all loans with amount between 200k and 500k, in order\" repeatedly"
+            ],
+            [
+              "E",
+              "A cache where you must evict the least-recently-used entry when you hit 10,000 items"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "q8",
+      "title": "Payment matching that times out in production",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "This ran fine against 500 test records and times out against 80,000 production records:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public List<Payment> FindUnmatchedPayments(List<Payment> payments, List<Invoice> invoices)\n{\n    var unmatched = new List<Payment>();\n    foreach (var p in payments)\n    {\n        var match = invoices.FirstOrDefault(i =>\n            i.CustomerId == p.CustomerId && i.Amount == p.Amount);\n        if (match == null) unmatched.Add(p);\n    }\n    return unmatched;\n}"
+        }
+      ],
+      "ask": "State the current complexity and the fixed complexity. Write the fix. Then the hard part: the business clarifies that **one invoice can only match one payment** (a payment \"consumes\" its invoice). Does your fix still work? What does that change about the data structure — and about the *result*?"
+    },
+    {
+      "id": "q9",
+      "title": "Predict the output: two loops, two lists of actions",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "var actions = new List<Action>();\n\nfor (int i = 0; i < 3; i++)\n    actions.Add(() => Console.Write(i));\n\nforeach (var a in actions) a();\nConsole.WriteLine();\n\nvar actions2 = new List<Action>();\nforeach (var x in new[] { 0, 1, 2 })\n    actions2.Add(() => Console.Write(x));\n\nforeach (var a in actions2) a();"
+        }
+      ],
+      "ask": "What does each block print, and why do they differ?"
+    },
+    {
+      "id": "q10",
+      "title": "Code review: money transfer endpoint",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Review this endpoint as if it were a PR. List every issue you'd block on, ordered by severity."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "[HttpPost(\"transfer\")]\npublic async Task<IActionResult> Transfer(TransferRequest req)\n{\n    var conn = new SqlConnection(_config[\"Db:ConnectionString\"]);\n    conn.Open();\n\n    var cmd = new SqlCommand(\n        $\"SELECT Balance FROM Accounts WHERE AccountId = '{req.FromAccount}'\", conn);\n    var balance = (decimal)cmd.ExecuteScalar();\n\n    if (balance < req.Amount)\n        return BadRequest(\"Insufficient funds\");\n\n    await _repo.DebitAsync(req.FromAccount, req.Amount);\n    await _repo.CreditAsync(req.ToAccount, req.Amount);\n\n    _logger.LogInformation($\"Transferred {req.Amount} from {req.FromAccount} to {req.ToAccount}\");\n\n    return Ok();\n}"
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "title": "Predict the output: async program with exceptions",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "class Program\n{\n    static async Task Main()\n    {\n        Console.WriteLine(\"A\");\n        FireAndForget();\n        Console.WriteLine(\"B\");\n\n        try { await ThrowsTwice(); }\n        catch (Exception ex) { Console.WriteLine($\"Caught: {ex.Message}\"); }\n\n        await Task.Delay(500);\n        Console.WriteLine(\"E\");\n    }\n\n    static async void FireAndForget()\n    {\n        Console.WriteLine(\"C\");\n        await Task.Delay(100);\n        Console.WriteLine(\"D\");\n        throw new InvalidOperationException(\"boom\");\n    }\n\n    static async Task ThrowsTwice()\n    {\n        var t1 = Task.Run(() => throw new InvalidOperationException(\"first\"));\n        var t2 = Task.Run(() => throw new ArgumentException(\"second\"));\n        await Task.WhenAll(t1, t2);\n    }\n}"
+        }
+      ],
+      "ask": "Predict the full output and what happens to the process. Then: exactly one exception message is printed by the `catch` — which one, and how would you get *both*?"
+    },
+    {
+      "id": "q12",
+      "title": "Predict the output: querying a list that changes",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "var numbers = new List<int> { 1, 2, 3 };\n\nvar query = numbers.Where(n => n > 1);\nvar list  = numbers.Where(n => n > 1).ToList();\n\nnumbers.Add(4);\n\nConsole.WriteLine(string.Join(\",\", query));\nConsole.WriteLine(string.Join(\",\", list));\nConsole.WriteLine(query.Count());\nConsole.WriteLine(numbers.Where(n => { Console.Write(\"!\"); return n > 1; }).Any());"
+        }
+      ],
+      "ask": "Give all four output lines (including any `!` characters) and explain the difference between lines 1 and 2."
+    },
+    {
+      "id": "q13",
+      "title": "Reading lines from a file",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public IEnumerable<string> ReadLines(string path)\n{\n    using var reader = new StreamReader(path);\n    string line;\n    while ((line = reader.ReadLine()) != null)\n        yield return line;\n}\n\n// Caller A\nvar lines = ReadLines(\"big.csv\");\nvar first = lines.First();\n\n// Caller B\nvar all = ReadLines(\"big.csv\").ToList();\n\n// Caller C\nvar lines2 = ReadLines(\"big.csv\").Take(5);\nConsole.WriteLine(\"before enumeration\");\nforeach (var l in lines2) Console.WriteLine(l);"
+        }
+      ],
+      "ask": "For each caller, say when the `StreamReader` is opened and when it is closed. Which caller can leak the file handle, and under what condition? Then: what changes if you add an argument-validation `if (path == null) throw ...` as the first line of the method?"
+    },
+    {
+      "id": "q14",
+      "title": "Review the report builder's error handling",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public async Task<Report> BuildReportAsync(int id, CancellationToken ct)\n{\n    try\n    {\n        var data = await _client.FetchAsync(id, ct);\n        return Transform(data);\n    }\n    catch (Exception ex)\n    {\n        _logger.LogError(ex, \"Report build failed for {Id}\", id);\n        throw ex;\n    }\n    finally\n    {\n        await _auditService.RecordAttemptAsync(id);   // no ct passed\n    }\n}"
+        }
+      ],
+      "ask": "Name four distinct problems here. For each, say what the observable production impact is — not just the rule."
+    },
+    {
+      "id": "q15",
+      "title": "One library, three apps, one hangs",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "The same library method is consumed by three apps. It deadlocks in one of them."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "// Library\npublic async Task<string> GetTokenAsync()\n{\n    var res = await _http.GetStringAsync(_url);\n    return Parse(res);\n}\n\n// Consumer 1: ASP.NET Core controller\npublic IActionResult Get() => Ok(_svc.GetTokenAsync().Result);\n\n// Consumer 2: WinForms button handler\nprivate void Button_Click(object s, EventArgs e) => label.Text = _svc.GetTokenAsync().Result;\n\n// Consumer 3: Console app\nstatic void Main() => Console.WriteLine(_svc.GetTokenAsync().Result);"
+        }
+      ],
+      "ask": "Which consumers deadlock, and which don't? Explain the mechanism precisely. Would `ConfigureAwait(false)` in the library fix it? Should the library add it anyway? And what's the correct fix in each consumer?"
+    },
+    {
+      "id": "q16",
+      "title": "Program.cs after a cleanup",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A developer reorders `Program.cs` while \"cleaning up\":"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "var app = builder.Build();\n\napp.UseAuthorization();\napp.UseAuthentication();\napp.UseRouting();\napp.UseExceptionHandler(\"/error\");\napp.UseStaticFiles();\napp.MapControllers();\napp.Run();"
+        },
+        {
+          "type": "text",
+          "text": "Reported symptoms: every `[Authorize]` endpoint returns **401 even with a valid token**, unhandled exceptions return a raw stack trace instead of the error page, and static files are served but slowly."
+        }
+      ],
+      "ask": "Give the correct order and explain, for each symptom, which ordering mistake causes it."
+    },
+    {
+      "id": "q17",
+      "title": "Service registrations and a data mix-up",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "builder.Services.AddSingleton<ICacheService, CacheService>();\nbuilder.Services.AddScoped<IUserContext, UserContext>();\nbuilder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(cs));   // scoped\nbuilder.Services.AddSingleton<ReportGenerator>();\n\npublic class CacheService : ICacheService\n{\n    public CacheService(AppDbContext db) { _db = db; }      // ⚠\n}\n\npublic class ReportGenerator\n{\n    public ReportGenerator(IUserContext ctx) { _ctx = ctx; } // ⚠\n}\n\napp.MapPost(\"/reports\", async (ReportRequest req, ReportGenerator gen)\n    => Results.Ok(await gen.BuildAsync(req)));"
+        },
+        {
+          "type": "text",
+          "text": "The app starts fine in Development but throws at startup in Production. Later, after a \"fix,\" reports intermittently contain **another user's** data."
+        }
+      ],
+      "ask": "Explain the startup difference between environments, name the anti-pattern, and describe exactly how the cross-user data leak happens. Then fix both registrations properly."
+    },
+    {
+      "id": "q18",
+      "title": "Active-loans report that's fast locally, slow in production",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public async Task<List<LoanDto>> GetActiveLoansAsync()\n{\n    var loans = await _db.Loans\n        .Where(l => l.Status == \"Active\")\n        .ToListAsync();\n\n    var result = new List<LoanDto>();\n    foreach (var loan in loans)\n    {\n        result.Add(new LoanDto\n        {\n            Id = loan.Id,\n            BorrowerName = loan.Borrower.FullName,          // lazy loaded\n            TotalPaid = loan.Payments.Sum(p => p.Amount),   // lazy loaded\n            LatestNote = loan.Notes.OrderByDescending(n => n.CreatedAt).First().Text\n        });\n    }\n    return result;\n}"
+        },
+        {
+          "type": "text",
+          "text": "Local (200 loans): 400ms. Production (45,000 active loans): 3-minute timeout, and the DBA reports **hundreds of thousands** of queries from this endpoint."
+        }
+      ],
+      "ask": "Name the problem and count the queries. Rewrite it. Then: your rewrite uses `Include` — explain when `Include` is the *wrong* answer here and what you'd do instead. Finally, what would you add so this can never regress silently?"
+    },
+    {
+      "id": "q19",
+      "title": "Request counter that miscounts under load",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A multi-tenant API tracks request counts:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "public class TenantMetrics\n{\n    private static int _requestCount;\n    public static int Increment() => ++_requestCount;\n}\n\npublic class OrderMetrics<T>\n{\n    private static int _count;\n    public static int Increment() => ++_count;\n}"
+        },
+        {
+          "type": "text",
+          "text": "Two production defects are reported:"
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "`TenantMetrics.Increment()` returns duplicate values and the final total is **lower** than actual requests under load.",
+            "A developer \"fixed\" it by switching to `OrderMetrics<T>` and now `OrderMetrics<Retail>.Increment()` and `OrderMetrics<Wholesale>.Increment()` return **independent** sequences — which they did not expect."
+          ]
+        }
+      ],
+      "ask": "Explain both behaviors precisely. Then: what's the correct primitive for #1, and is #2 a bug or a feature you could exploit?"
+    },
+    {
+      "id": "q20",
+      "title": "Making an inherited API deployable",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "You inherit a .NET 8 API that \"works on my machine\" and is deployed by copying files onto a VM and restarting it. You're asked to make it deploy safely and repeatably. Here's what you find:"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "code": "// Program.cs\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddDbContext<AppDbContext>(o =>\n    o.UseSqlServer(\"Server=prod-sql;Database=Loans;User Id=svc;Password=P@ssw0rd!\"));\nbuilder.Services.AddSingleton<IFileStore>(new LocalDiskStore(@\"C:\\app\\uploads\"));\n\nvar app = builder.Build();\napp.Services.GetRequiredService<AppDbContext>().Database.Migrate();   // migrate on boot\napp.MapControllers();\napp.Run();"
+        },
+        {
+          "type": "text",
+          "text": "Also: in-memory session state, logs written to `C:\\app\\logs\\app.log`, a hardcoded `if (Environment.MachineName == \"PROD-WEB-01\")` branch, and no health endpoint."
+        }
+      ],
+      "ask": "List what must change before this can be deployed automatically to multiple environments and more than one instance. Group your answer by concern, and say which single change you'd make first."
+    }
+  ]
+}

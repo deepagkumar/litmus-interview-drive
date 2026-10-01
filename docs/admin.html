@@ -16,7 +16,7 @@
 </script>
 <title>Litmus Admin</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/app.css?v=4">
+<link rel="stylesheet" href="assets/app.css?v=5">
 </head>
 <body>
 <header class="top">
@@ -143,9 +143,28 @@
   </div>
 </main>
 
+<div class="overlay" id="deleteDialog" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <h3 id="deleteTitle">Delete this drive?</h3>
+    <p id="deleteText"></p>
+    <div class="fields" style="grid-template-columns:1fr">
+      <div>
+        <label for="deleteConfirm">Type <strong>DELETE</strong> to confirm</label>
+        <input id="deleteConfirm" type="text" autocomplete="off" spellcheck="false">
+        <div class="err" id="deleteErr"></div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn secondary" id="deleteCancel" type="button">Cancel</button>
+      <button class="btn danger" id="deleteGo" type="button" disabled>Delete drive</button>
+    </div>
+  </div>
+</div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="assets/config.js?v=4"></script>
-<script src="assets/common.js?v=4"></script>
+<script src="assets/config.js?v=5"></script>
+<script src="assets/common.js?v=5"></script>
 <script>
 (function(){
   const A = window.App;
@@ -162,15 +181,15 @@
   const candidateLink = id => new URL('index.html?drive=' + encodeURIComponent(id), location.href.split('?')[0]).href;
   const fmtDate = s => s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-  function adminApi(action, payload){
-    return A.api(action, Object.assign({ adminKey }, payload || {})).catch(e => {
+  function adminApi(action, payload, timeoutMs){
+    return A.api(action, Object.assign({ adminKey }, payload || {}), timeoutMs).catch(e => {
       if (e.code === 'unauthorized') lock('Your admin key was rejected. Please unlock again.');
       throw e;
     });
   }
-  function download(name, text){
+  function download(name, data, type){
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
+    a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: type || 'application/json' })); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
@@ -211,43 +230,131 @@
     try { drives = (await adminApi('admin.listDrives')).drives || []; renderList(); $('listStatus').textContent = ''; }
     catch (e) { $('listStatus').className = 'status err'; $('listStatus').textContent = e.message; }
   }
+  // Inline SVG icons (stroke = currentColor) for the drive actions.
+  const ICON_PATHS = {
+    edit:   '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    close:  '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    reopen: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.8"/>',
+    link:   '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    json:   '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>',
+    trash:  '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'
+  };
+  const icon = name => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON_PATHS[name] + '</svg>';
+  function iconBtn(act, id, iconName, tipTitle, tipText, extraClass){
+    return '<button type="button" class="iconbtn' + (extraClass ? ' ' + extraClass : '') + '" data-act="' + act + '" data-id="' + A.esc(id) +
+      '" data-tip-title="' + A.esc(tipTitle) + '" data-tip="' + A.esc(tipText) + '" aria-label="' + A.esc(tipTitle + '. ' + tipText) + '">' + icon(iconName) + '</button>';
+  }
+
   function renderList(){
+    hideTip();
     if (!drives.length) { $('driveRows').innerHTML = '<tr><td colspan="6">No drives yet. Press <strong>New drive</strong> to create one.</td></tr>'; return; }
-    $('driveRows').innerHTML = drives.map(d => `<tr>
+    $('driveRows').innerHTML = drives.map(d => {
+      const open = d.status === 'open', n = d.submissionCount;
+      return `<tr>
       <td class="title"><strong>${A.esc(d.title)}</strong><small>${A.esc(d.id)}</small>
         <div class="actions">
-          <button type="button" class="btn small secondary" data-act="edit" data-id="${A.esc(d.id)}">Edit</button>
-          <button type="button" class="btn small secondary" data-act="toggle" data-id="${A.esc(d.id)}">${d.status === 'open' ? 'Close' : 'Reopen'}</button>
-          <button type="button" class="btn small secondary" data-act="link" data-id="${A.esc(d.id)}">Copy link</button>
-          <button type="button" class="btn small secondary" data-act="json" data-id="${A.esc(d.id)}">JSON</button>
+          ${iconBtn('edit', d.id, 'edit', 'Edit drive', 'Change the details, time limit or questions. Changes apply to candidates who start after you save.')}
+          ${open ? iconBtn('toggle', d.id, 'close', 'Close drive', 'Hide this drive from candidates. Anyone already taking it can still submit. You can reopen it any time.')
+                 : iconBtn('toggle', d.id, 'reopen', 'Reopen drive', 'Make this drive visible to candidates again.')}
+          ${iconBtn('link', d.id, 'link', 'Copy candidate link', 'Copy a direct link to the candidate page with this drive pre-selected.')}
+          ${iconBtn('json', d.id, 'json', 'Download drive JSON', 'Download the full drive definition, including questions and evaluator notes. Useful as a backup or as a template for a new drive.')}
+          ${iconBtn('delete', d.id, 'trash', 'Delete drive', (n ? 'Move this drive and its ' + A.plural(n, 'submission') : 'Move this drive') + ' to Google Drive trash. You will be asked to confirm.', 'danger')}
         </div></td>
-      <td><span class="badge ${d.status === 'open' ? 'open' : 'closed'}">${d.status === 'open' ? 'Open' : 'Closed'}</span></td>
+      <td><span class="badge ${open ? 'open' : 'closed'}">${open ? 'Open' : 'Closed'}</span></td>
       <td>${d.questionCount}${d.bankSize !== d.questionCount ? ' of ' + d.bankSize : ''}</td>
       <td>${d.durationMinutes} min</td>
-      <td>${d.folderUrl ? `<a href="${A.esc(d.folderUrl)}" target="_blank" rel="noopener">${d.submissionCount}</a>` : d.submissionCount}</td>
-      <td>${A.esc(fmtDate(d.updatedAt))}</td></tr>`).join('');
+      <td class="subs"><div class="count">${n}</div>
+        <button type="button" class="btn small secondary dl" data-act="results" data-id="${A.esc(d.id)}" ${n ? '' : 'aria-disabled="true"'}
+          data-tip-title="Download results" data-tip="${n ? A.esc('Download all ' + A.plural(n, 'submission') + ' as a .zip, with an index.csv summary of each candidate (time used, questions answered, focus events, server verification).') : 'No submissions yet.'}">${icon('download')}<span>Download results</span></button></td>
+      <td>${A.esc(fmtDate(d.updatedAt))}</td></tr>`;
+    }).join('');
   }
   $('refreshBtn').addEventListener('click', refreshList);
   $('driveRows').addEventListener('click', async e => {
-    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const b = e.target.closest('button[data-act]'); if (!b || b.disabled || b.getAttribute('aria-disabled') === 'true') return;
+    hideTip();
     const id = b.dataset.id, d = drives.find(x => x.id === id);
     const st = $('listStatus');
     if (b.dataset.act === 'link') return copy(candidateLink(id), st);
+    if (b.dataset.act === 'delete') return askDelete(d);
     b.disabled = true;
+    const label = b.querySelector('span'), labelText = label && label.textContent;
     try {
       if (b.dataset.act === 'toggle') {
         const status = d.status === 'open' ? 'closed' : 'open';
         await adminApi('admin.setStatus', { driveId: id, status });
         d.status = status; renderList();
         st.className = 'status ok'; st.textContent = '"' + d.title + '" is now ' + status + '.';
+      } else if (b.dataset.act === 'results') {
+        if (label) label.textContent = 'Preparing…';
+        st.className = 'status'; st.textContent = 'Zipping ' + A.plural(d.submissionCount, 'submission') + ' for "' + d.title + '"…';
+        const r = await adminApi('admin.downloadResults', { driveId: id }, 180000);
+        const bin = atob(r.base64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        download(r.fileName, new Blob([bytes], { type: 'application/zip' }));
+        st.className = 'status ok'; st.textContent = 'Downloaded ' + A.plural(r.count, 'submission') + ' as ' + r.fileName + '.';
       } else {
         const full = (await adminApi('admin.getDrive', { driveId: id })).drive;
         if (b.dataset.act === 'json') download('drive-' + id + '.json', JSON.stringify(full, null, 2));
         else openEditor(full);
       }
     } catch (err) { st.className = 'status err'; st.textContent = err.message; }
-    finally { b.disabled = false; }
+    finally { b.disabled = false; if (label) label.textContent = labelText; }
   });
+
+  // ---------- delete drive ----------
+  let deleting = null;
+  function askDelete(d){
+    deleting = d;
+    $('deleteText').innerHTML = '<strong>' + A.esc(d.title) + '</strong> (' + A.esc(d.id) + ')' +
+      (d.submissionCount ? ' and its <strong>' + A.plural(d.submissionCount, 'submission') + '</strong>' : '') +
+      ' will be moved to your Google Drive trash. Candidates will no longer see it. You can restore it from the Drive trash within 30 days; after that it is gone for good.';
+    $('deleteConfirm').value = ''; $('deleteErr').textContent = '';
+    $('deleteGo').disabled = true; $('deleteGo').textContent = 'Delete drive';
+    $('deleteDialog').hidden = false;
+    $('deleteConfirm').focus();
+  }
+  function closeDelete(){ $('deleteDialog').hidden = true; deleting = null; }
+  $('deleteConfirm').addEventListener('input', () => { $('deleteGo').disabled = $('deleteConfirm').value.trim() !== 'DELETE'; });
+  $('deleteConfirm').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('deleteGo').disabled) $('deleteGo').click(); });
+  $('deleteCancel').addEventListener('click', closeDelete);
+  $('deleteDialog').addEventListener('keydown', e => { if (e.key === 'Escape') closeDelete(); });
+  $('deleteGo').addEventListener('click', async () => {
+    if (!deleting) return;
+    const d = deleting;
+    $('deleteGo').disabled = true; $('deleteCancel').disabled = true; $('deleteGo').textContent = 'Deleting…';
+    try {
+      const r = await adminApi('admin.deleteDrive', { driveId: d.id, confirmId: d.id });
+      drives = drives.filter(x => x.id !== d.id);
+      renderList(); closeDelete();
+      $('listStatus').className = 'status ok';
+      $('listStatus').textContent = '"' + d.title + '"' + (r.trashedSubmissions ? ' and its ' + A.plural(r.trashedSubmissions, 'submission') + ' were' : ' was') + ' moved to Google Drive trash.';
+    } catch (err) {
+      $('deleteErr').textContent = err.message;
+      $('deleteGo').disabled = false; $('deleteGo').textContent = 'Delete drive';
+    } finally { $('deleteCancel').disabled = false; }
+  });
+
+  // ---------- tooltips ----------
+  // One floating tooltip on <body>, so it isn't clipped by the table's scroll container.
+  let tipFor = null;
+  function showTip(el){
+    tipFor = el;
+    const tip = $('tip');
+    tip.innerHTML = '<strong>' + A.esc(el.dataset.tipTitle || '') + '</strong>' + A.esc(el.dataset.tip || '');
+    tip.hidden = false;
+    const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect(), pad = 8;
+    let top = r.top - t.height - pad;
+    if (top < pad) top = r.bottom + pad;
+    const left = Math.min(Math.max(pad, r.left + r.width / 2 - t.width / 2), window.innerWidth - t.width - pad);
+    tip.style.top = top + 'px'; tip.style.left = left + 'px';
+  }
+  function hideTip(){ tipFor = null; $('tip').hidden = true; }
+  document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (el && el !== tipFor) showTip(el); else if (!el && tipFor) hideTip(); });
+  document.addEventListener('focusin', e => { const el = e.target.closest('[data-tip]'); if (el) showTip(el); });
+  document.addEventListener('focusout', hideTip);
+  window.addEventListener('scroll', hideTip, true);
 
   // ---------- editor: details + questions ----------
   const F = { title: 'fTitle', role: 'fRole', description: 'fDescription', notice: 'fNotice' };

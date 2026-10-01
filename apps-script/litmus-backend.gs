@@ -18,7 +18,8 @@
  *
  * API: every call is a POST whose JSON body has an "action".
  *   Public: listDrives, start, submit
- *   Admin (body must include adminKey): admin.listDrives, admin.getDrive, admin.saveDrive, admin.setStatus
+ *   Admin (body must include adminKey): admin.listDrives, admin.getDrive, admin.saveDrive, admin.setStatus,
+ *     admin.downloadResults, admin.deleteDrive
  * Responses: {ok:true, ...} or {ok:false, error, code}.
  */
 
@@ -33,6 +34,7 @@ const SESSION_TTL_SECONDS = 21600;     // 6h, the CacheService maximum — so ti
 const MAX_DURATION_MINUTES = 300;
 const LIST_CACHE_KEY = 'publicDrives';
 const LIST_CACHE_SECONDS = 300;
+const MAX_RESULTS_ZIP_BYTES = 30 * 1024 * 1024;   // raw size limit; the zip is returned base64-encoded in the response
 const ID_RE = /^[a-z0-9][a-z0-9-]{2,79}$/;
 const QID_RE = /^[A-Za-z0-9_.-]{1,40}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -47,7 +49,9 @@ const ADMIN_ACTIONS = {
   'admin.listDrives': adminListDrives_,
   'admin.getDrive': adminGetDrive_,
   'admin.saveDrive': adminSaveDrive_,
-  'admin.setStatus': adminSetStatus_
+  'admin.setStatus': adminSetStatus_,
+  'admin.downloadResults': adminDownloadResults_,
+  'admin.deleteDrive': adminDeleteDrive_
 };
 
 function doGet() {
@@ -173,12 +177,10 @@ function adminListDrives_() {
   const subs = childFolder_(rootFolder_(), 'submissions', false);
   const drives = allDrives_().map(function (d) {
     const folder = subs ? childFolder_(subs, d.id, false) : null;
-    let count = 0;
-    if (folder) { const it = folder.getFiles(); while (it.hasNext()) { it.next(); count++; } }
     return Object.assign(publicMeta_(d), {
       status: d.status, shuffle: !!d.shuffle, bankSize: d.questions.length,
       createdAt: d.createdAt, updatedAt: d.updatedAt,
-      submissionCount: count, folderUrl: folder ? folder.getUrl() : ''
+      submissionCount: folder ? liveFiles_(folder).length : 0
     });
   });
   return { drives: drives };
@@ -237,6 +239,62 @@ function adminSetStatus_(req) {
   }
   invalidateList_();
   return {};
+}
+
+// Zips every submission of a drive, plus an index.csv summary, and returns it base64-encoded.
+function adminDownloadResults_(req) {
+  const id = checkId_(req.driveId);
+  const folder = submissionsFolder_(id, false);
+  const files = folder ? liveFiles_(folder) : [];
+  if (!files.length) fail_('This drive has no submissions yet.');
+  files.sort(function (a, b) { return a.getName().localeCompare(b.getName()); });
+
+  const used = {};
+  const rows = [['File', 'Candidate', 'Email', 'Started', 'Finished', 'Minutes used', 'Answered',
+                 'Times left page', 'Minutes away', 'Times exited full screen', 'Hit time limit', 'Server verification']];
+  let total = 0;
+  const blobs = files.map(function (f) {
+    const blob = f.getBlob();
+    total += blob.getBytes().length;
+    if (total > MAX_RESULTS_ZIP_BYTES) fail_('The submissions for this drive are too large to download in one zip (over ' +
+                                              MAX_RESULTS_ZIP_BYTES / 1024 / 1024 + ' MB). Download them from the Drive folder instead.');
+    let name = f.getName();
+    for (let n = 2; used[name]; n++) name = f.getName().replace(/(\.[^.]*)?$/, '-' + n + '$1');
+    used[name] = true;
+    blob.setName(name);
+    rows.push(summaryRow_(name, blob.getDataAsString('UTF-8')));
+    return blob;
+  });
+  blobs.push(Utilities.newBlob('\uFEFF' + rows.map(csvRow_).join('\r\n'), 'text/csv', 'index.csv'));
+
+  const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmm');
+  const fileName = id + '-results-' + stamp + '.zip';
+  const zip = Utilities.zip(blobs, fileName);
+  return { fileName: fileName, count: files.length, base64: Utilities.base64Encode(zip.getBytes()) };
+}
+
+// Moves the drive file and its submissions folder to Google Drive trash (recoverable there for 30 days).
+// The caller must echo the drive id in confirmId, as a guard against accidental calls.
+function adminDeleteDrive_(req) {
+  const id = checkId_(req.driveId);
+  if (req.confirmId !== id) fail_('Deletion was not confirmed.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  let count = 0;
+  try {
+    const file = findDriveFile_(id);
+    if (!file) fail_('Drive not found.');
+    const folder = submissionsFolder_(id, false);
+    if (folder) {
+      count = liveFiles_(folder).length;
+      folder.setTrashed(true);
+    }
+    file.setTrashed(true);
+  } finally {
+    lock.releaseLock();
+  }
+  invalidateList_();
+  return { trashedSubmissions: count };
 }
 
 // ---------------------------------------------------------------- validation
@@ -357,14 +415,34 @@ function rubricHtml_(drive, qids) {
   return items ? '<section><h2>Evaluator notes (from the drive, never shown to the candidate)</h2>' + items + '</section>' : '';
 }
 
-function questionIdsFromHtml_(html) {
+function screeningData_(html) {
   const m = html.match(/<script type="application\/json" id="screening-data">([\s\S]*?)<\/script>/);
-  if (!m) return [];
-  try {
-    return (JSON.parse(m[1]).answers || []).map(function (a) { return String(a.questionId || ''); });
-  } catch (e) {
-    return [];
-  }
+  if (!m) return {};
+  try { return JSON.parse(m[1]) || {}; } catch (e) { return {}; }
+}
+
+function questionIdsFromHtml_(html) {
+  return (screeningData_(html).answers || []).map(function (a) { return String(a.questionId || ''); });
+}
+
+function summaryRow_(fileName, html) {
+  const d = screeningData_(html);
+  const c = d.candidate || {}, fm = d.focusMonitoring || {}, answers = d.answers || [];
+  const verification = (html.match(/Server verification: ([^<]+)<\/h2>/) || [])[1] || '';
+  const mins = function (s) { return s == null ? '' : Math.round(s / 6) / 10; };
+  return [fileName, c.name || '', c.email || '', d.startedAt || '', d.finishedAt || '', mins(d.timeUsedSeconds),
+          answers.filter(function (a) { return a.words > 0; }).length + '/' + answers.length,
+          fm.timesLeftPage == null ? '' : fm.timesLeftPage, mins(fm.secondsAwayFromPage),
+          fm.timesExitedFullScreen == null ? '' : fm.timesExitedFullScreen,
+          d.finishedAfterTimeUp ? 'yes' : 'no', verification];
+}
+
+function csvRow_(cells) {
+  return cells.map(function (v) {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // stop spreadsheet formula injection from candidate-entered text
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',');
 }
 
 // ---------------------------------------------------------------- storage
@@ -374,10 +452,21 @@ function rootFolder_() {
   return DriveApp.getFolderById(ROOT_FOLDER_ID);
 }
 
+// DriveApp lookups also return trashed items, so every lookup goes through these filters.
+function firstLive_(it) {
+  while (it.hasNext()) { const x = it.next(); if (!x.isTrashed()) return x; }
+  return null;
+}
+
+function liveFiles_(folder) {
+  const out = [];
+  const it = folder.getFiles();
+  while (it.hasNext()) { const f = it.next(); if (!f.isTrashed()) out.push(f); }
+  return out;
+}
+
 function childFolder_(parent, name, create) {
-  const it = parent.getFoldersByName(name);
-  if (it.hasNext()) return it.next();
-  return create ? parent.createFolder(name) : null;
+  return firstLive_(parent.getFoldersByName(name)) || (create ? parent.createFolder(name) : null);
 }
 
 function drivesFolder_() { return childFolder_(rootFolder_(), 'drives', true); }
@@ -388,8 +477,7 @@ function submissionsFolder_(driveId, create) {
 }
 
 function findDriveFile_(id) {
-  const it = drivesFolder_().getFilesByName('drive-' + id + '.json');
-  return it.hasNext() ? it.next() : null;
+  return firstLive_(drivesFolder_().getFilesByName('drive-' + id + '.json'));
 }
 
 function readDrive_(id) {
@@ -406,13 +494,11 @@ function writeDrive_(drive) {
 
 function allDrives_() {
   const out = [];
-  const it = drivesFolder_().getFiles();
-  while (it.hasNext()) {
-    const f = it.next();
-    if (!/^drive-.+\.json$/.test(f.getName())) continue;
+  liveFiles_(drivesFolder_()).forEach(function (f) {
+    if (!/^drive-.+\.json$/.test(f.getName())) return;
     try { out.push(JSON.parse(f.getBlob().getDataAsString('UTF-8'))); }
     catch (e) { console.warn('Skipping unreadable drive file ' + f.getName() + ': ' + e); }
-  }
+  });
   out.sort(function (a, b) { return String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); });
   return out;
 }

@@ -45,9 +45,15 @@ in your Google Drive.
 **Admin flow**
 
 1. Open `admin.html` and unlock it with the admin key (Apps Script property `ADMIN_KEY`).
-2. **Drive list:** status, questions (per candidate / bank size), time, submission count
-   (links to the Drive folder), and actions: *Edit*, *Close/Reopen*, *Copy link*, and
-   *JSON* (download).
+2. **Drive list:** status, questions (per candidate / bank size), time and submission
+   count. Hover over (or focus) any icon for a description of what it does:
+   - **Edit**, **Close / Reopen**, **Copy candidate link**, **Download drive JSON**.
+   - **Delete:** after you type `DELETE` to confirm, the drive file and its submissions
+     folder are moved to Google Drive trash. You can restore them from the trash within
+     30 days.
+   - **Download results** (under the submission count) zips every submission for the drive,
+     plus an `index.csv` with one row per candidate: time used, questions answered, focus
+     events, and server verification status.
 3. **New drive → Details & questions:** fill in the details and upload (or paste) the
    questions JSON. Any drive fields inside the file (title, time limit…) fill fields that
    are still empty.
@@ -71,7 +77,7 @@ docs/                         # GitHub Pages source folder
   samples/
     dotnet-screening-round1.json  # The original 20 .NET questions, in the new format
 apps-script/
-  Code.gs                     # Google Apps Script backend (paste into script.google.com)
+  litmus-backend.gs           # Google Apps Script backend (paste into script.google.com)
 ```
 
 ## Setup
@@ -81,7 +87,7 @@ apps-script/
 1. Create a Google Drive folder for the platform. Its ID is the part of the folder URL
    after `/folders/`.
 2. Go to [script.google.com](https://script.google.com) → New project, and paste in
-   `apps-script/Code.gs`.
+   `apps-script/litmus-backend.gs`.
 3. Set `ROOT_FOLDER_ID` to that folder's ID. The `drives/` and `submissions/` subfolders
    are created automatically.
 4. **Project Settings → Script Properties → Add property:** `ADMIN_KEY` = a long random
@@ -209,6 +215,8 @@ CORS preflight). Responses are `{ok: true, …}` or `{ok: false, error, code}`.
 | `admin.getDrive` | admin key | Full drive JSON, including rubrics |
 | `admin.saveDrive` | admin key | Create (no `id`) or update (with `id`) a drive |
 | `admin.setStatus` | admin key | `{driveId, status: "open" \| "closed"}` |
+| `admin.downloadResults` | admin key | `{driveId}` → `{fileName, count, base64}`: zip of all submissions + `index.csv` (max 30 MB) |
+| `admin.deleteDrive` | admin key | `{driveId, confirmId}` (`confirmId` must equal `driveId`) → trashes the drive and its submissions |
 
 ## Notes / gotchas
 
@@ -225,6 +233,11 @@ CORS preflight). Responses are `{ok: true, …}` or `{ok: false, error, code}`.
   Apps Script's cache for up to 6 hours, which is why time limits are capped at 300 minutes.
   A submission whose session has expired is saved but marked *Unverified*.
 - Editing a drive affects only candidates who start after you save.
+- Deleting uses Google Drive's trash rather than permanent deletion, so mistakes can be
+  undone from Drive within 30 days. DriveApp lookups also return trashed items, so the
+  backend explicitly ignores anything in the trash.
+- **Download results** is limited to about 30 MB of submissions per zip, roughly a few hundred
+  candidates. For bigger drives, download the files from the Drive folder directly.
 - Closing or refreshing the page mid-screening clears answers. There's no autosave, by
   design.
 - Both pages force a fresh load on every visit (a one-time cache-busting redirect).

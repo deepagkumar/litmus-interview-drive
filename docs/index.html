@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+// Force a fresh network load on every visit, even on hosts (like GitHub Pages) that don't
+// let us set real Cache-Control response headers. Appending a one-time timestamp makes this
+// a "new" URL the browser has never cached, so it must fetch it from the server. This only
+// runs once per navigation, before anything else on the page, so it never interrupts an
+// in-progress screening — a mid-session refresh already clears answers, same as before.
+(function(){
+  if (location.search.indexOf('_cb=') === -1) {
+    var sep = location.search ? '&' : '?';
+    location.replace(location.pathname + location.search + sep + '_cb=' + Date.now());
+  }
+})();
+</script>
+<title>.NET Technical Screening – Round 1</title>
+<style>
+:root{
+  --red:#C8102E; --red-dark:#A30D25; --red-tint:#FBECEE;
+  --ink:#1A1A1A; --ink2:#333; --dim:#6B6B6B; --line:#D9D9D9; --panel:#F5F3F0; --white:#fff;
+  --code:#f4f4f6; --codeline:#e2e4e9; --ask:#f7f4f0;
+  --k:#0000c0; --t:#267f99; --s:#a31515; --c:#6a9955; --n:#098658;
+  --ok:#1F7A4D; --warn:#B8860B;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--panel);color:var(--ink);font:16px/1.6 "Inter","Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif}
+header.top{position:sticky;top:0;z-index:10;background:var(--white);border-bottom:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.topin{max-width:960px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.brand .bar{width:4px;height:22px;background:var(--red);border-radius:2px}
+.timer{margin-left:auto;font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:7px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.timer.low{background:var(--red-tint);border-color:var(--red);color:var(--red-dark)}
+.progress{font-size:13px;color:var(--dim)}
+nav.qnav{max-width:960px;margin:0 auto;padding:0 20px 10px;display:flex;flex-wrap:wrap;gap:6px}
+nav.qnav a{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid var(--line);font-size:13px;color:var(--ink2);text-decoration:none;background:var(--white)}
+nav.qnav a.done{background:var(--ok);border-color:var(--ok);color:#fff}
+main{max-width:960px;margin:0 auto;padding:24px 20px 80px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:28px 32px;margin-bottom:24px}
+h1{font-size:30px;line-height:1.15;margin:0 0 12px;font-weight:600;color:var(--ink2)}
+.intro p{margin:0 0 12px}
+.intro ul{margin:0 0 14px;padding-left:22px}
+.note{background:var(--panel);border-left:4px solid var(--red);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0 0}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.fields label{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.fields input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--white)}
+.fields input:focus{outline:2px solid var(--red);outline-offset:0;border-color:var(--red)}
+.fields .err{color:var(--red-dark);font-size:13px;min-height:18px;margin-top:4px}
+.req{color:var(--red)}
+.startrow{margin-top:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn{font:600 15px/1 inherit;padding:12px 22px;border-radius:999px;border:0;background:var(--red);color:#fff;cursor:pointer}
+.btn:hover{background:var(--red-dark)}
+.btn.secondary{background:var(--white);color:var(--ink2);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:13px;color:var(--dim)}
+#quiz[hidden]{display:none}
+section.q{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:26px 32px;margin-bottom:24px;scroll-margin-top:120px}
+.qhead{border-bottom:2px solid var(--red);padding-bottom:10px;margin-bottom:16px}
+.qn{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--red)}
+.qhead h2{font-size:20px;line-height:1.3;margin:2px 0 0;font-weight:600;color:var(--ink2)}
+.qbody p{margin:0 0 13px}
+.qbody code,.editor code{font:.875em/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .36em;border-radius:4px;border:1px solid var(--codeline)}
+.qbody ul,.qbody ol{margin:0 0 14px;padding-left:24px}
+.qbody li{margin:0 0 6px}
+p.ask{background:var(--ask);border-left:4px solid var(--red);padding:11px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+pre.src{position:relative;background:var(--code);border:1px solid var(--codeline);border-radius:8px;padding:16px 18px;overflow-x:auto;margin:0 0 16px;user-select:text}
+pre.src code{font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;background:none;border:0;padding:0}
+pre.src::before{content:attr(data-lang);position:absolute;top:0;right:0;font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:var(--dim);background:#f6f7f9;padding:5px 8px;border-left:1px solid var(--codeline);border-bottom:1px solid var(--codeline);border-radius:0 8px 0 6px}
+pre.src .k{color:var(--k);font-weight:600} pre.src .t{color:var(--t)} pre.src .s{color:var(--s)} pre.src .c{color:var(--c);font-style:italic} pre.src .n{color:var(--n)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:0 0 16px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f6f7f9;font-size:13px}
+tbody tr:last-child td{border-bottom:0}
+.ans{margin-top:20px}
+.anslabel{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px;border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;background:#fafafa}
+.toolbar button{font:600 13px/1 inherit;min-width:32px;height:30px;padding:0 9px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink2);cursor:pointer}
+.toolbar button:hover{background:var(--white);border-color:var(--line)}
+.toolbar button:focus-visible{outline:2px solid var(--red)}
+.toolbar .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+.toolbar .wc{margin-left:auto;font-size:12px;color:var(--dim);padding-right:6px}
+.editor{min-height:170px;max-height:60vh;overflow:auto;padding:12px 14px;border:1px solid var(--line);border-radius:0 0 8px 8px;background:var(--white);outline:none;line-height:1.6}
+.editor:focus{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.editor:empty::before{content:attr(data-placeholder);color:#9a9a9a}
+.editor pre{background:var(--code);border:1px solid var(--codeline);border-radius:6px;padding:10px 12px;font:13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;margin:6px 0}
+.editor ul,.editor ol{padding-left:24px;margin:4px 0}
+.editor[contenteditable="false"]{background:#f7f7f7;color:var(--dim)}
+.submitcard{text-align:center}
+.result{margin-top:18px;text-align:left}
+.result textarea{width:100%;height:160px;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fafafa;word-break:break-all;resize:vertical}
+.resultrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0}
+.submitcard p{margin:0 0 14px}
+.status{margin-top:14px;font-size:14px}
+.status.ok{color:var(--ok)} .status.warn{color:var(--warn)}
+.awaybar{position:sticky;top:0;z-index:9;background:var(--red-tint);border-bottom:1px solid var(--red);color:var(--red-dark);font-size:14px}
+.awaybar[hidden]{display:none}
+.awaybar .in{max-width:960px;margin:0 auto;padding:8px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.awaybar button{font:600 13px/1 inherit;padding:7px 12px;border-radius:999px;border:1px solid var(--red);background:var(--white);color:var(--red-dark);cursor:pointer}
+html:fullscreen body,body:fullscreen{overflow:auto}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay[hidden]{display:none}
+.dialog{background:var(--white);border-radius:8px;max-width:520px;width:100%;padding:24px 26px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.dialog h3{margin:0 0 10px;font-size:19px}
+.dialog .row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+@media (max-width:640px){.fields{grid-template-columns:1fr}.card,section.q{padding:20px 18px}h1{font-size:24px}}
+@media print{header.top,.toolbar,.submitcard{display:none}section.q{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <div class="brand"><span class="bar"></span>.NET Technical Screening</div>
+    <span class="progress" id="progress">0 of 20 answered</span>
+    <span class="timer" id="timer" title="Time remaining">45:00</span>
+  </div>
+  <nav class="qnav" id="qnav" hidden><a href="#q1" id="nav1">1</a><a href="#q2" id="nav2">2</a><a href="#q3" id="nav3">3</a><a href="#q4" id="nav4">4</a><a href="#q5" id="nav5">5</a><a href="#q6" id="nav6">6</a><a href="#q7" id="nav7">7</a><a href="#q8" id="nav8">8</a><a href="#q9" id="nav9">9</a><a href="#q10" id="nav10">10</a><a href="#q11" id="nav11">11</a><a href="#q12" id="nav12">12</a><a href="#q13" id="nav13">13</a><a href="#q14" id="nav14">14</a><a href="#q15" id="nav15">15</a><a href="#q16" id="nav16">16</a><a href="#q17" id="nav17">17</a><a href="#q18" id="nav18">18</a><a href="#q19" id="nav19">19</a><a href="#q20" id="nav20">20</a></nav>
+</header>
+<div class="awaybar" id="awaybar" hidden><div class="in"><span id="awaytext"></span><button type="button" id="refs" hidden>Return to full screen</button></div></div>
+
+<main>
+  <div class="card intro" id="introCard">
+    <h1>.NET Technical Screening – Round 1</h1>
+    <p>Welcome, and thank you for your interest in this role.</p>
+    <p>This round has <strong>20 questions</strong> and you have <strong>45 minutes</strong> to complete it. Most questions show a code snippet or scenario. Read each one carefully and write your answer in your own words in the box below it. The toolbar lets you format code, lists and emphasis.</p>
+    <ul>
+      <li>Enter your full name and email address, then press <strong>Start</strong>. The 45-minute timer begins when you start.</li>
+      <li>Assume .NET 8 and C# 12 unless a question says otherwise.</li>
+      <li>Answer independently, without running the code, searching online, or using AI tools.</li>
+      <li>Explain your reasoning, not just the final answer. Partial answers with clear thinking still earn credit.</li>
+      <li>The page switches to full screen when you press Start. Stay on this page until you finish: leaving it (switching tabs, windows or apps) or exiting full screen is recorded, with how often and for how long, and included with your answers.</li>
+      <li>Keep this page open until you finish. Closing or refreshing the page will clear your answers.</li>
+      <li>When you're done, press <strong>Submit answers</strong>. Your answers are sent to us directly — there's nothing to download or email. Don't close this page until you see the confirmation that your submission went through.</li>
+    </ul>
+    <div class="note"><strong>How your answers are evaluated:</strong> our interview team reviews every response, and we use AI to help assess the answers. Final decisions are always made by people.</div>
+
+    <div class="fields" id="fields">
+      <div>
+        <label for="cname">Full name <span class="req">*</span></label>
+        <input id="cname" type="text" autocomplete="name" maxlength="120">
+        <div class="err" id="cname-err"></div>
+      </div>
+      <div>
+        <label for="cemail">Email address <span class="req">*</span></label>
+        <input id="cemail" type="email" autocomplete="email" maxlength="200">
+        <div class="err" id="cemail-err"></div>
+      </div>
+    </div>
+    <div class="startrow">
+      <button class="btn" id="startBtn" type="button">Start</button>
+      <span class="hint" id="startHint">Questions appear after you start.</span>
+    </div>
+  </div>
+
+  <div id="quiz" hidden>
+<section class="q" id="q1" data-n="1">
+  <div class="qhead"><span class="qn">Question 1</span><h2>The high-value transaction that skipped validation</h2></div>
+  <div class="qbody"><p>A payments team has this base class in a shared NuGet package:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">class</span> <span class="t">TransactionProcessor</span>
+{
+    <span class="k">public</span> <span class="k">void</span> <span class="t">Process</span>(<span class="k">decimal</span> amount)
+    {
+        <span class="t">Validate</span>(amount);
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">$"Processed {amount}"</span>);
+    }
+
+    <span class="k">protected</span> <span class="k">void</span> <span class="t">Validate</span>(<span class="k">decimal</span> amount)
+    {
+        <span class="k">if</span> (amount &lt;= <span class="n">0</span>) <span class="k">throw</span> <span class="k">new</span> <span class="t">ArgumentException</span>(<span class="s">"Invalid amount"</span>);
+    }
+}</code></pre>
+<p>A new team writes:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">class</span> <span class="t">HighValueProcessor</span> : <span class="t">TransactionProcessor</span>
+{
+    <span class="k">protected</span> <span class="k">void</span> <span class="t">Validate</span>(<span class="k">decimal</span> amount)   <span class="c">// compiler warning ignored
+</span>    {
+        <span class="k">if</span> (amount &lt;= <span class="n">0</span>) <span class="k">throw</span> <span class="k">new</span> <span class="t">ArgumentException</span>(<span class="s">"Invalid amount"</span>);
+        <span class="k">if</span> (amount &gt; <span class="n">1</span>_000_000) <span class="k">throw</span> <span class="k">new</span> <span class="t">ArgumentException</span>(<span class="s">"Needs approval"</span>);
+    }
+}</code></pre>
+<p>QA files a bug: a <code>$5,000,000</code> transaction went through <code>HighValueProcessor.Process()</code> with <strong>no approval error</strong>. The developer insists their validation code is correct — and it is, in isolation.</p>
+<p class="ask"><strong>Ask:</strong> Why didn't the new rule fire? What is the minimum change to the base class and the derived class to fix it?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed1">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 1">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc1">0 words</span>
+    </div>
+    <div class="editor" id="ed1" contenteditable="true" role="textbox" aria-multiline="true" data-title="The high-value transaction that skipped validation" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q2" data-n="2">
+  <div class="qhead"><span class="qn">Question 2</span><h2>Predict the output: notifier channels</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">class</span> <span class="t">Notifier</span>
+{
+    <span class="k">public</span> <span class="k">virtual</span> <span class="k">string</span> <span class="t">Channel</span>() =&gt; <span class="s">"Base"</span>;
+    <span class="k">public</span> <span class="k">string</span> <span class="t">Describe</span>() =&gt; <span class="s">$"Sending via {Channel()}"</span>;
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">EmailNotifier</span> : <span class="t">Notifier</span>
+{
+    <span class="k">public</span> <span class="k">override</span> <span class="k">string</span> <span class="t">Channel</span>() =&gt; <span class="s">"Email"</span>;
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">SmsNotifier</span> : <span class="t">EmailNotifier</span>
+{
+    <span class="k">public</span> <span class="k">new</span> <span class="k">string</span> <span class="t">Channel</span>() =&gt; <span class="s">"SMS"</span>;
+}
+
+<span class="c">// ---
+</span><span class="t">Notifier</span> a = <span class="k">new</span> <span class="t">SmsNotifier</span>();
+<span class="t">EmailNotifier</span> b = <span class="k">new</span> <span class="t">SmsNotifier</span>();
+<span class="t">SmsNotifier</span> c = <span class="k">new</span> <span class="t">SmsNotifier</span>();
+
+<span class="t">Console</span>.<span class="t">WriteLine</span>(a.<span class="t">Channel</span>());
+<span class="t">Console</span>.<span class="t">WriteLine</span>(b.<span class="t">Channel</span>());
+<span class="t">Console</span>.<span class="t">WriteLine</span>(c.<span class="t">Channel</span>());
+<span class="t">Console</span>.<span class="t">WriteLine</span>(c.<span class="t">Describe</span>());</code></pre>
+<p class="ask"><strong>Ask:</strong> Write the four output lines. Then explain in one sentence the rule that produced the difference between line 3 and line 4.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed2">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 2">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc2">0 words</span>
+    </div>
+    <div class="editor" id="ed2" contenteditable="true" role="textbox" aria-multiline="true" data-title="Predict the output: notifier channels" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q3" data-n="3">
+  <div class="qhead"><span class="qn">Question 3</span><h2>Repository crashes on construction</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">abstract</span> <span class="k">class</span> <span class="t">RepositoryBase</span>
+{
+    <span class="k">protected</span> <span class="t">RepositoryBase</span>()
+    {
+        <span class="t">Initialize</span>();            <span class="c">// template hook
+</span>    }
+    <span class="k">protected</span> <span class="k">abstract</span> <span class="k">void</span> <span class="t">Initialize</span>();
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">LoanRepository</span> : <span class="t">RepositoryBase</span>
+{
+    <span class="k">private</span> <span class="k">readonly</span> <span class="t">List</span>&lt;<span class="k">string</span>&gt; _cache = <span class="k">new</span>();
+    <span class="k">private</span> <span class="k">readonly</span> <span class="k">string</span> _connectionString;
+
+    <span class="k">public</span> <span class="t">LoanRepository</span>(<span class="k">string</span> connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
+    <span class="k">protected</span> <span class="k">override</span> <span class="k">void</span> <span class="t">Initialize</span>()
+    {
+        _cache.<span class="t">Add</span>(_connectionString.<span class="t">ToUpper</span>());
+    }
+}</code></pre>
+<p><code>new LoanRepository("Server=prod;")</code> throws <code>NullReferenceException</code> on the <code>_cache.Add(...)</code> line — in production, on every single call.</p>
+<p class="ask"><strong>Ask:</strong> Walk through the exact construction order and name which field is null and why. Then propose a design that keeps the "initialize hook" idea but is safe.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed3">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 3">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc3">0 words</span>
+    </div>
+    <div class="editor" id="ed3" contenteditable="true" role="textbox" aria-multiline="true" data-title="Repository crashes on construction" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q4" data-n="4">
+  <div class="qhead"><span class="qn">Question 4</span><h2>Predict the output: comparing values</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">struct</span> <span class="t">Point</span> { <span class="k">public</span> <span class="k">int</span> <span class="t">X</span>, <span class="t">Y</span>; }
+<span class="k">public</span> <span class="k">record</span> <span class="k">class</span> <span class="t">Money</span>(<span class="k">decimal</span> <span class="t">Amount</span>, <span class="k">string</span> <span class="t">Currency</span>);
+<span class="k">public</span> <span class="k">record</span> <span class="k">struct</span> <span class="t">Coord</span>(<span class="k">int</span> <span class="t">X</span>, <span class="k">int</span> <span class="t">Y</span>);
+
+<span class="k">var</span> p1 = <span class="k">new</span> <span class="t">Point</span> { <span class="t">X</span> = <span class="n">1</span>, <span class="t">Y</span> = <span class="n">2</span> };
+<span class="k">var</span> p2 = <span class="k">new</span> <span class="t">Point</span> { <span class="t">X</span> = <span class="n">1</span>, <span class="t">Y</span> = <span class="n">2</span> };
+<span class="k">var</span> m1 = <span class="k">new</span> <span class="t">Money</span>(<span class="n">1</span><span class="n">0</span>m, <span class="s">"USD"</span>);
+<span class="k">var</span> m2 = <span class="k">new</span> <span class="t">Money</span>(<span class="n">1</span><span class="n">0</span>m, <span class="s">"USD"</span>);
+<span class="k">var</span> c1 = <span class="k">new</span> <span class="t">Coord</span>(<span class="n">1</span>, <span class="n">2</span>);
+<span class="k">var</span> c2 = <span class="k">new</span> <span class="t">Coord</span>(<span class="n">1</span>, <span class="n">2</span>);
+
+<span class="t">Console</span>.<span class="t">Write</span>(p1.<span class="t">Equals</span>(p2));
+<span class="t">Console</span>.<span class="t">Write</span>(m1 == m2);
+<span class="t">Console</span>.<span class="t">Write</span>(<span class="t">ReferenceEquals</span>(m1, m2));
+<span class="t">Console</span>.<span class="t">Write</span>(c1 == c2);</code></pre>
+<p><strong>Which line of output is produced?</strong></p>
+<ul><li><strong>A.</strong> <code>TrueTrueTrueTrue</code></li><li><strong>B.</strong> <code>TrueTrueFalseTrue</code></li><li><strong>C.</strong> <code>FalseTrueFalseTrue</code></li><li><strong>D.</strong> <code>TrueFalseFalseFalse</code></li><li><strong>E.</strong> <code>FalseFalseFalseFalse</code></li></ul></div>
+  <div class="ans">
+    <label class="anslabel" for="ed4">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 4">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc4">0 words</span>
+    </div>
+    <div class="editor" id="ed4" contenteditable="true" role="textbox" aria-multiline="true" data-title="Predict the output: comparing values" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q5" data-n="5">
+  <div class="qhead"><span class="qn">Question 5</span><h2>Rate-change notifications in a long-running service</h2></div>
+  <div class="qbody"><p>A rate-change notification service:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">class</span> <span class="t">RateService</span>
+{
+    <span class="k">public</span> <span class="k">event</span> <span class="t">EventHandler</span>&lt;<span class="t">RateChangedArgs</span>&gt; <span class="t">RateChanged</span>;
+    <span class="k">public</span> <span class="k">void</span> <span class="t">Publish</span>(<span class="t">RateChangedArgs</span> e) =&gt; <span class="t">RateChanged</span>?.<span class="t">Invoke</span>(<span class="k">this</span>, e);
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">QuoteWidget</span>
+{
+    <span class="k">public</span> <span class="t">QuoteWidget</span>(<span class="t">RateService</span> svc) =&gt; svc.<span class="t">RateChanged</span> += <span class="t">OnRateChanged</span>;
+    <span class="k">private</span> <span class="k">void</span> <span class="t">OnRateChanged</span>(<span class="k">object</span> s, <span class="t">RateChangedArgs</span> e) { <span class="c">/* redraw */</span> }
+}</code></pre>
+<p><code>RateService</code> is a <strong>singleton</strong>. <code>QuoteWidget</code> is created per user session. After a week of uptime: memory grows monotonically, and a single downstream subscriber throwing an exception means <strong>later subscribers never get the event</strong>.</p>
+<p class="ask"><strong>Ask:</strong> Diagnose both problems. Then redesign — and justify whether you'd keep <code>event</code>, move to <code>IObservable&lt;T&gt;</code>, or use a message bus/channel.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed5">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 5">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc5">0 words</span>
+    </div>
+    <div class="editor" id="ed5" contenteditable="true" role="textbox" aria-multiline="true" data-title="Rate-change notifications in a long-running service" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q6" data-n="6">
+  <div class="qhead"><span class="qn">Question 6</span><h2>Reviewing a constructor with many parameters</h2></div>
+  <div class="qbody"><p>A teammate adds an 11th optional parameter to this constructor:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="t">HttpRequestSpec</span>(<span class="k">string</span> url, <span class="k">string</span> method = <span class="s">"GET"</span>, <span class="k">int</span> timeoutSec = <span class="n">3</span><span class="n">0</span>,
+    <span class="k">bool</span> retry = <span class="k">false</span>, <span class="k">int</span> retryCount = <span class="n">3</span>, <span class="k">string</span> contentType = <span class="s">"application/json"</span>,
+    <span class="k">bool</span> compress = <span class="k">false</span>, <span class="k">string</span> authToken = <span class="k">null</span>, <span class="k">bool</span> followRedirects = <span class="k">true</span>,
+    <span class="k">int</span> maxRedirects = <span class="n">5</span>, <span class="k">bool</span> validateSsl = <span class="k">true</span>) { }</code></pre>
+<p>Call sites in the wild look like:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">new</span> <span class="t">HttpRequestSpec</span>(<span class="s">"https://api/x"</span>, <span class="s">"POST"</span>, <span class="n">6</span><span class="n">0</span>, <span class="k">true</span>, <span class="n">5</span>, <span class="s">"application/json"</span>, <span class="k">false</span>, token, <span class="k">true</span>, <span class="n">5</span>, <span class="k">true</span>);</code></pre>
+<p class="ask"><strong>Ask:</strong> Name three concrete failure modes of this design as it exists today. Then show how a Builder (or a modern C# alternative) fixes them — and say when a Builder would be <em>over-engineering</em> here.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed6">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 6">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc6">0 words</span>
+    </div>
+    <div class="editor" id="ed6" contenteditable="true" role="textbox" aria-multiline="true" data-title="Reviewing a constructor with many parameters" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q7" data-n="7">
+  <div class="qhead"><span class="qn">Question 7</span><h2>Pick the right collection</h2></div>
+  <div class="qbody"><p>For each scenario, name the structure and justify in one line:</p>
+<div class="tbl"><table><thead><tr><th>#</th><th>Scenario</th></tr></thead><tbody><tr><td>A</td><td>Deduplicate 2 million loan numbers read from a file; you only need "have I seen this?"</td></tr><tr><td>B</td><td>Map <code>loanNumber → LoanSummary</code>, single-threaded batch job, ~10k entries, need fastest lookup</td></tr><tr><td>C</td><td>Same map, but read and written by 200 concurrent request threads</td></tr><tr><td>D</td><td>Need to answer "give me all loans with amount between 200k and 500k, in order" repeatedly</td></tr><tr><td>E</td><td>A cache where you must evict the least-recently-used entry when you hit 10,000 items</td></tr></tbody></table></div></div>
+  <div class="ans">
+    <label class="anslabel" for="ed7">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 7">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc7">0 words</span>
+    </div>
+    <div class="editor" id="ed7" contenteditable="true" role="textbox" aria-multiline="true" data-title="Pick the right collection" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q8" data-n="8">
+  <div class="qhead"><span class="qn">Question 8</span><h2>Payment matching that times out in production</h2></div>
+  <div class="qbody"><p>This ran fine against 500 test records and times out against 80,000 production records:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="t">List</span>&lt;<span class="t">Payment</span>&gt; <span class="t">FindUnmatchedPayments</span>(<span class="t">List</span>&lt;<span class="t">Payment</span>&gt; payments, <span class="t">List</span>&lt;<span class="t">Invoice</span>&gt; invoices)
+{
+    <span class="k">var</span> unmatched = <span class="k">new</span> <span class="t">List</span>&lt;<span class="t">Payment</span>&gt;();
+    <span class="k">foreach</span> (<span class="k">var</span> p <span class="k">in</span> payments)
+    {
+        <span class="k">var</span> match = invoices.<span class="t">FirstOrDefault</span>(i =&gt;
+            i.<span class="t">CustomerId</span> == p.<span class="t">CustomerId</span> &amp;&amp; i.<span class="t">Amount</span> == p.<span class="t">Amount</span>);
+        <span class="k">if</span> (match == <span class="k">null</span>) unmatched.<span class="t">Add</span>(p);
+    }
+    <span class="k">return</span> unmatched;
+}</code></pre>
+<p class="ask"><strong>Ask:</strong> State the current complexity and the fixed complexity. Write the fix. Then the hard part: the business clarifies that <strong>one invoice can only match one payment</strong> (a payment "consumes" its invoice). Does your fix still work? What does that change about the data structure — and about the <em>result</em>?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed8">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 8">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc8">0 words</span>
+    </div>
+    <div class="editor" id="ed8" contenteditable="true" role="textbox" aria-multiline="true" data-title="Payment matching that times out in production" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q9" data-n="9">
+  <div class="qhead"><span class="qn">Question 9</span><h2>Predict the output: two loops, two lists of actions</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">var</span> actions = <span class="k">new</span> <span class="t">List</span>&lt;<span class="t">Action</span>&gt;();
+
+<span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; <span class="n">3</span>; i++)
+    actions.<span class="t">Add</span>(() =&gt; <span class="t">Console</span>.<span class="t">Write</span>(i));
+
+<span class="k">foreach</span> (<span class="k">var</span> a <span class="k">in</span> actions) <span class="t">a</span>();
+<span class="t">Console</span>.<span class="t">WriteLine</span>();
+
+<span class="k">var</span> actions2 = <span class="k">new</span> <span class="t">List</span>&lt;<span class="t">Action</span>&gt;();
+<span class="k">foreach</span> (<span class="k">var</span> x <span class="k">in</span> <span class="k">new</span>[] { <span class="n">0</span>, <span class="n">1</span>, <span class="n">2</span> })
+    actions2.<span class="t">Add</span>(() =&gt; <span class="t">Console</span>.<span class="t">Write</span>(x));
+
+<span class="k">foreach</span> (<span class="k">var</span> a <span class="k">in</span> actions2) <span class="t">a</span>();</code></pre>
+<p class="ask"><strong>Ask:</strong> What does each block print, and why do they differ?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed9">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 9">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc9">0 words</span>
+    </div>
+    <div class="editor" id="ed9" contenteditable="true" role="textbox" aria-multiline="true" data-title="Predict the output: two loops, two lists of actions" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q10" data-n="10">
+  <div class="qhead"><span class="qn">Question 10</span><h2>Code review: money transfer endpoint</h2></div>
+  <div class="qbody"><p>Review this endpoint as if it were a PR. List every issue you'd block on, ordered by severity.</p>
+<pre class="src" data-lang="CSHARP"><code>[HttpPost("transfer")]
+<span class="k">public</span> <span class="k">async</span> <span class="t">Task</span>&lt;<span class="t">IActionResult</span>&gt; <span class="t">Transfer</span>(<span class="t">TransferRequest</span> req)
+{
+    <span class="k">var</span> conn = <span class="k">new</span> <span class="t">SqlConnection</span>(_config[<span class="s">"Db:ConnectionString"</span>]);
+    conn.<span class="t">Open</span>();
+
+    <span class="k">var</span> cmd = <span class="k">new</span> <span class="t">SqlCommand</span>(
+        <span class="s">$"SELECT Balance FROM Accounts WHERE AccountId = '{req.FromAccount}'"</span>, conn);
+    <span class="k">var</span> balance = (<span class="k">decimal</span>)cmd.<span class="t">ExecuteScalar</span>();
+
+    <span class="k">if</span> (balance &lt; req.<span class="t">Amount</span>)
+        <span class="k">return</span> <span class="t">BadRequest</span>(<span class="s">"Insufficient funds"</span>);
+
+    <span class="k">await</span> _repo.<span class="t">DebitAsync</span>(req.<span class="t">FromAccount</span>, req.<span class="t">Amount</span>);
+    <span class="k">await</span> _repo.<span class="t">CreditAsync</span>(req.<span class="t">ToAccount</span>, req.<span class="t">Amount</span>);
+
+    _logger.<span class="t">LogInformation</span>(<span class="s">$"Transferred {req.Amount} from {req.FromAccount} to {req.ToAccount}"</span>);
+
+    <span class="k">return</span> <span class="t">Ok</span>();
+}</code></pre></div>
+  <div class="ans">
+    <label class="anslabel" for="ed10">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 10">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc10">0 words</span>
+    </div>
+    <div class="editor" id="ed10" contenteditable="true" role="textbox" aria-multiline="true" data-title="Code review: money transfer endpoint" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q11" data-n="11">
+  <div class="qhead"><span class="qn">Question 11</span><h2>Predict the output: async program with exceptions</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">class</span> <span class="t">Program</span>
+{
+    <span class="k">static</span> <span class="k">async</span> <span class="t">Task</span> <span class="t">Main</span>()
+    {
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"A"</span>);
+        <span class="t">FireAndForget</span>();
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"B"</span>);
+
+        <span class="k">try</span> { <span class="k">await</span> <span class="t">ThrowsTwice</span>(); }
+        <span class="k">catch</span> (<span class="t">Exception</span> ex) { <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">$"Caught: {ex.Message}"</span>); }
+
+        <span class="k">await</span> <span class="t">Task</span>.<span class="t">Delay</span>(<span class="n">5</span><span class="n">0</span><span class="n">0</span>);
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"E"</span>);
+    }
+
+    <span class="k">static</span> <span class="k">async</span> <span class="k">void</span> <span class="t">FireAndForget</span>()
+    {
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"C"</span>);
+        <span class="k">await</span> <span class="t">Task</span>.<span class="t">Delay</span>(<span class="n">1</span><span class="n">0</span><span class="n">0</span>);
+        <span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"D"</span>);
+        <span class="k">throw</span> <span class="k">new</span> <span class="t">InvalidOperationException</span>(<span class="s">"boom"</span>);
+    }
+
+    <span class="k">static</span> <span class="k">async</span> <span class="t">Task</span> <span class="t">ThrowsTwice</span>()
+    {
+        <span class="k">var</span> t1 = <span class="t">Task</span>.<span class="t">Run</span>(() =&gt; <span class="k">throw</span> <span class="k">new</span> <span class="t">InvalidOperationException</span>(<span class="s">"first"</span>));
+        <span class="k">var</span> t2 = <span class="t">Task</span>.<span class="t">Run</span>(() =&gt; <span class="k">throw</span> <span class="k">new</span> <span class="t">ArgumentException</span>(<span class="s">"second"</span>));
+        <span class="k">await</span> <span class="t">Task</span>.<span class="t">WhenAll</span>(t1, t2);
+    }
+}</code></pre>
+<p class="ask"><strong>Ask:</strong> Predict the full output and what happens to the process. Then: exactly one exception message is printed by the <code>catch</code> — which one, and how would you get <em>both</em>?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed11">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 11">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc11">0 words</span>
+    </div>
+    <div class="editor" id="ed11" contenteditable="true" role="textbox" aria-multiline="true" data-title="Predict the output: async program with exceptions" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q12" data-n="12">
+  <div class="qhead"><span class="qn">Question 12</span><h2>Predict the output: querying a list that changes</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">var</span> numbers = <span class="k">new</span> <span class="t">List</span>&lt;<span class="k">int</span>&gt; { <span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span> };
+
+<span class="k">var</span> query = numbers.<span class="t">Where</span>(n =&gt; n &gt; <span class="n">1</span>);
+<span class="k">var</span> list  = numbers.<span class="t">Where</span>(n =&gt; n &gt; <span class="n">1</span>).<span class="t">ToList</span>();
+
+numbers.<span class="t">Add</span>(<span class="n">4</span>);
+
+<span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="k">string</span>.<span class="t">Join</span>(<span class="s">","</span>, query));
+<span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="k">string</span>.<span class="t">Join</span>(<span class="s">","</span>, list));
+<span class="t">Console</span>.<span class="t">WriteLine</span>(query.<span class="t">Count</span>());
+<span class="t">Console</span>.<span class="t">WriteLine</span>(numbers.<span class="t">Where</span>(n =&gt; { <span class="t">Console</span>.<span class="t">Write</span>(<span class="s">"!"</span>); <span class="k">return</span> n &gt; <span class="n">1</span>; }).<span class="t">Any</span>());</code></pre>
+<p class="ask"><strong>Ask:</strong> Give all four output lines (including any <code>!</code> characters) and explain the difference between lines 1 and 2.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed12">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 12">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc12">0 words</span>
+    </div>
+    <div class="editor" id="ed12" contenteditable="true" role="textbox" aria-multiline="true" data-title="Predict the output: querying a list that changes" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q13" data-n="13">
+  <div class="qhead"><span class="qn">Question 13</span><h2>Reading lines from a file</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="t">IEnumerable</span>&lt;<span class="k">string</span>&gt; <span class="t">ReadLines</span>(<span class="k">string</span> path)
+{
+    <span class="k">using</span> var reader = <span class="k">new</span> <span class="t">StreamReader</span>(path);
+    <span class="k">string</span> line;
+    <span class="k">while</span> ((line = reader.<span class="t">ReadLine</span>()) != <span class="k">null</span>)
+        <span class="k">yield</span> <span class="k">return</span> line;
+}
+
+<span class="c">// Caller A
+</span><span class="k">var</span> lines = <span class="t">ReadLines</span>(<span class="s">"big.csv"</span>);
+<span class="k">var</span> first = lines.<span class="t">First</span>();
+
+<span class="c">// Caller B
+</span><span class="k">var</span> all = <span class="t">ReadLines</span>(<span class="s">"big.csv"</span>).<span class="t">ToList</span>();
+
+<span class="c">// Caller C
+</span><span class="k">var</span> lines2 = <span class="t">ReadLines</span>(<span class="s">"big.csv"</span>).<span class="t">Take</span>(<span class="n">5</span>);
+<span class="t">Console</span>.<span class="t">WriteLine</span>(<span class="s">"before enumeration"</span>);
+<span class="k">foreach</span> (<span class="k">var</span> l <span class="k">in</span> lines2) <span class="t">Console</span>.<span class="t">WriteLine</span>(l);</code></pre>
+<p class="ask"><strong>Ask:</strong> For each caller, say when the <code>StreamReader</code> is opened and when it is closed. Which caller can leak the file handle, and under what condition? Then: what changes if you add an argument-validation <code>if (path == null) throw ...</code> as the first line of the method?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed13">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 13">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc13">0 words</span>
+    </div>
+    <div class="editor" id="ed13" contenteditable="true" role="textbox" aria-multiline="true" data-title="Reading lines from a file" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q14" data-n="14">
+  <div class="qhead"><span class="qn">Question 14</span><h2>Review the report builder&#x27;s error handling</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">async</span> <span class="t">Task</span>&lt;<span class="t">Report</span>&gt; <span class="t">BuildReportAsync</span>(<span class="k">int</span> id, <span class="t">CancellationToken</span> ct)
+{
+    <span class="k">try</span>
+    {
+        <span class="k">var</span> data = <span class="k">await</span> _client.<span class="t">FetchAsync</span>(id, ct);
+        <span class="k">return</span> <span class="t">Transform</span>(data);
+    }
+    <span class="k">catch</span> (<span class="t">Exception</span> ex)
+    {
+        _logger.<span class="t">LogError</span>(ex, <span class="s">"Report build failed for {Id}"</span>, id);
+        <span class="k">throw</span> ex;
+    }
+    <span class="k">finally</span>
+    {
+        <span class="k">await</span> _auditService.<span class="t">RecordAttemptAsync</span>(id);   <span class="c">// no ct passed
+</span>    }
+}</code></pre>
+<p class="ask"><strong>Ask:</strong> Name four distinct problems here. For each, say what the observable production impact is — not just the rule.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed14">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 14">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc14">0 words</span>
+    </div>
+    <div class="editor" id="ed14" contenteditable="true" role="textbox" aria-multiline="true" data-title="Review the report builder&#x27;s error handling" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q15" data-n="15">
+  <div class="qhead"><span class="qn">Question 15</span><h2>One library, three apps, one hangs</h2></div>
+  <div class="qbody"><p>The same library method is consumed by three apps. It deadlocks in one of them.</p>
+<pre class="src" data-lang="CSHARP"><code><span class="c">// Library
+</span><span class="k">public</span> <span class="k">async</span> <span class="t">Task</span>&lt;<span class="k">string</span>&gt; <span class="t">GetTokenAsync</span>()
+{
+    <span class="k">var</span> res = <span class="k">await</span> _http.<span class="t">GetStringAsync</span>(_url);
+    <span class="k">return</span> <span class="t">Parse</span>(res);
+}
+
+<span class="c">// Consumer 1: ASP.NET Core controller
+</span><span class="k">public</span> <span class="t">IActionResult</span> <span class="t">Get</span>() =&gt; <span class="t">Ok</span>(_svc.<span class="t">GetTokenAsync</span>().<span class="t">Result</span>);
+
+<span class="c">// Consumer 2: WinForms button handler
+</span><span class="k">private</span> <span class="k">void</span> <span class="t">Button_Click</span>(<span class="k">object</span> s, <span class="t">EventArgs</span> e) =&gt; label.<span class="t">Text</span> = _svc.<span class="t">GetTokenAsync</span>().<span class="t">Result</span>;
+
+<span class="c">// Consumer 3: Console app
+</span><span class="k">static</span> <span class="k">void</span> <span class="t">Main</span>() =&gt; <span class="t">Console</span>.<span class="t">WriteLine</span>(_svc.<span class="t">GetTokenAsync</span>().<span class="t">Result</span>);</code></pre>
+<p class="ask"><strong>Ask:</strong> Which consumers deadlock, and which don't? Explain the mechanism precisely. Would <code>ConfigureAwait(false)</code> in the library fix it? Should the library add it anyway? And what's the correct fix in each consumer?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed15">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 15">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc15">0 words</span>
+    </div>
+    <div class="editor" id="ed15" contenteditable="true" role="textbox" aria-multiline="true" data-title="One library, three apps, one hangs" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q16" data-n="16">
+  <div class="qhead"><span class="qn">Question 16</span><h2>Program.cs after a cleanup</h2></div>
+  <div class="qbody"><p>A developer reorders <code>Program.cs</code> while "cleaning up":</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">var</span> app = builder.<span class="t">Build</span>();
+
+app.<span class="t">UseAuthorization</span>();
+app.<span class="t">UseAuthentication</span>();
+app.<span class="t">UseRouting</span>();
+app.<span class="t">UseExceptionHandler</span>(<span class="s">"/error"</span>);
+app.<span class="t">UseStaticFiles</span>();
+app.<span class="t">MapControllers</span>();
+app.<span class="t">Run</span>();</code></pre>
+<p>Reported symptoms: every <code>[Authorize]</code> endpoint returns <strong>401 even with a valid token</strong>, unhandled exceptions return a raw stack trace instead of the error page, and static files are served but slowly.</p>
+<p class="ask"><strong>Ask:</strong> Give the correct order and explain, for each symptom, which ordering mistake causes it.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed16">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 16">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc16">0 words</span>
+    </div>
+    <div class="editor" id="ed16" contenteditable="true" role="textbox" aria-multiline="true" data-title="Program.cs after a cleanup" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q17" data-n="17">
+  <div class="qhead"><span class="qn">Question 17</span><h2>Service registrations and a data mix-up</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code>builder.<span class="t">Services</span>.<span class="t">AddSingleton</span>&lt;<span class="t">ICacheService</span>, <span class="t">CacheService</span>&gt;();
+builder.<span class="t">Services</span>.<span class="t">AddScoped</span>&lt;<span class="t">IUserContext</span>, <span class="t">UserContext</span>&gt;();
+builder.<span class="t">Services</span>.<span class="t">AddDbContext</span>&lt;<span class="t">AppDbContext</span>&gt;(o =&gt; o.<span class="t">UseSqlServer</span>(cs));   <span class="c">// scoped
+</span>builder.<span class="t">Services</span>.<span class="t">AddSingleton</span>&lt;<span class="t">ReportGenerator</span>&gt;();
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">CacheService</span> : <span class="t">ICacheService</span>
+{
+    <span class="k">public</span> <span class="t">CacheService</span>(<span class="t">AppDbContext</span> db) { _db = db; }      <span class="c">// ⚠
+</span>}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">ReportGenerator</span>
+{
+    <span class="k">public</span> <span class="t">ReportGenerator</span>(<span class="t">IUserContext</span> ctx) { _ctx = ctx; } <span class="c">// ⚠
+</span>}
+
+app.<span class="t">MapPost</span>(<span class="s">"/reports"</span>, <span class="k">async</span> (<span class="t">ReportRequest</span> req, <span class="t">ReportGenerator</span> gen)
+    =&gt; <span class="t">Results</span>.<span class="t">Ok</span>(<span class="k">await</span> gen.<span class="t">BuildAsync</span>(req)));</code></pre>
+<p>The app starts fine in Development but throws at startup in Production. Later, after a "fix," reports intermittently contain <strong>another user's</strong> data.</p>
+<p class="ask"><strong>Ask:</strong> Explain the startup difference between environments, name the anti-pattern, and describe exactly how the cross-user data leak happens. Then fix both registrations properly.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed17">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 17">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc17">0 words</span>
+    </div>
+    <div class="editor" id="ed17" contenteditable="true" role="textbox" aria-multiline="true" data-title="Service registrations and a data mix-up" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q18" data-n="18">
+  <div class="qhead"><span class="qn">Question 18</span><h2>Active-loans report that&#x27;s fast locally, slow in production</h2></div>
+  <div class="qbody"><pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">async</span> <span class="t">Task</span>&lt;<span class="t">List</span>&lt;<span class="t">LoanDto</span>&gt;&gt; <span class="t">GetActiveLoansAsync</span>()
+{
+    <span class="k">var</span> loans = <span class="k">await</span> _db.<span class="t">Loans</span>
+        .<span class="t">Where</span>(l =&gt; l.<span class="t">Status</span> == <span class="s">"Active"</span>)
+        .<span class="t">ToListAsync</span>();
+
+    <span class="k">var</span> result = <span class="k">new</span> <span class="t">List</span>&lt;<span class="t">LoanDto</span>&gt;();
+    <span class="k">foreach</span> (<span class="k">var</span> loan <span class="k">in</span> loans)
+    {
+        result.<span class="t">Add</span>(<span class="k">new</span> <span class="t">LoanDto</span>
+        {
+            <span class="t">Id</span> = loan.<span class="t">Id</span>,
+            <span class="t">BorrowerName</span> = loan.<span class="t">Borrower</span>.<span class="t">FullName</span>,          <span class="c">// lazy loaded
+</span>            <span class="t">TotalPaid</span> = loan.<span class="t">Payments</span>.<span class="t">Sum</span>(p =&gt; p.<span class="t">Amount</span>),   <span class="c">// lazy loaded
+</span>            <span class="t">LatestNote</span> = loan.<span class="t">Notes</span>.<span class="t">OrderByDescending</span>(n =&gt; n.<span class="t">CreatedAt</span>).<span class="t">First</span>().<span class="t">Text</span>
+        });
+    }
+    <span class="k">return</span> result;
+}</code></pre>
+<p>Local (200 loans): 400ms. Production (45,000 active loans): 3-minute timeout, and the DBA reports <strong>hundreds of thousands</strong> of queries from this endpoint.</p>
+<p class="ask"><strong>Ask:</strong> Name the problem and count the queries. Rewrite it. Then: your rewrite uses <code>Include</code> — explain when <code>Include</code> is the <em>wrong</em> answer here and what you'd do instead. Finally, what would you add so this can never regress silently?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed18">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 18">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc18">0 words</span>
+    </div>
+    <div class="editor" id="ed18" contenteditable="true" role="textbox" aria-multiline="true" data-title="Active-loans report that&#x27;s fast locally, slow in production" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q19" data-n="19">
+  <div class="qhead"><span class="qn">Question 19</span><h2>Request counter that miscounts under load</h2></div>
+  <div class="qbody"><p>A multi-tenant API tracks request counts:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="k">public</span> <span class="k">class</span> <span class="t">TenantMetrics</span>
+{
+    <span class="k">private</span> <span class="k">static</span> <span class="k">int</span> _requestCount;
+    <span class="k">public</span> <span class="k">static</span> <span class="k">int</span> <span class="t">Increment</span>() =&gt; ++_requestCount;
+}
+
+<span class="k">public</span> <span class="k">class</span> <span class="t">OrderMetrics</span>&lt;<span class="t">T</span>&gt;
+{
+    <span class="k">private</span> <span class="k">static</span> <span class="k">int</span> _count;
+    <span class="k">public</span> <span class="k">static</span> <span class="k">int</span> <span class="t">Increment</span>() =&gt; ++_count;
+}</code></pre>
+<p>Two production defects are reported:</p>
+<ol><li><code>TenantMetrics.Increment()</code> returns duplicate values and the final total is <strong>lower</strong> than actual requests under load.</li><li>A developer "fixed" it by switching to <code>OrderMetrics&lt;T&gt;</code> and now <code>OrderMetrics&lt;Retail&gt;.Increment()</code> and <code>OrderMetrics&lt;Wholesale&gt;.Increment()</code> return <strong>independent</strong> sequences — which they did not expect.</li></ol>
+<p class="ask"><strong>Ask:</strong> Explain both behaviors precisely. Then: what's the correct primitive for #1, and is #2 a bug or a feature you could exploit?</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed19">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 19">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc19">0 words</span>
+    </div>
+    <div class="editor" id="ed19" contenteditable="true" role="textbox" aria-multiline="true" data-title="Request counter that miscounts under load" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+<section class="q" id="q20" data-n="20">
+  <div class="qhead"><span class="qn">Question 20</span><h2>Making an inherited API deployable</h2></div>
+  <div class="qbody"><p>You inherit a .NET 8 API that "works on my machine" and is deployed by copying files onto a VM and restarting it. You're asked to make it deploy safely and repeatably. Here's what you find:</p>
+<pre class="src" data-lang="CSHARP"><code><span class="c">// Program.cs
+</span><span class="k">var</span> builder = <span class="t">WebApplication</span>.<span class="t">CreateBuilder</span>(args);
+builder.<span class="t">Services</span>.<span class="t">AddDbContext</span>&lt;<span class="t">AppDbContext</span>&gt;(o =&gt;
+    o.<span class="t">UseSqlServer</span>(<span class="s">"Server=prod-sql;Database=Loans;User Id=svc;Password=P@ssw0rd!"</span>));
+builder.<span class="t">Services</span>.<span class="t">AddSingleton</span>&lt;<span class="t">IFileStore</span>&gt;(<span class="k">new</span> <span class="t">LocalDiskStore</span>(<span class="s">@"C:\app\uploads"</span>));
+
+<span class="k">var</span> app = builder.<span class="t">Build</span>();
+app.<span class="t">Services</span>.<span class="t">GetRequiredService</span>&lt;<span class="t">AppDbContext</span>&gt;().<span class="t">Database</span>.<span class="t">Migrate</span>();   <span class="c">// migrate on boot
+</span>app.<span class="t">MapControllers</span>();
+app.<span class="t">Run</span>();</code></pre>
+<p>Also: in-memory session state, logs written to <code>C:\app\logs\app.log</code>, a hardcoded <code>if (Environment.MachineName == "PROD-WEB-01")</code> branch, and no health endpoint.</p>
+<p class="ask"><strong>Ask:</strong> List what must change before this can be deployed automatically to multiple environments and more than one instance. Group your answer by concern, and say which single change you'd make first.</p></div>
+  <div class="ans">
+    <label class="anslabel" for="ed20">Your answer</label>
+    <div class="toolbar" role="toolbar" aria-label="Formatting for question 20">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="code" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-cmd="pre" title="Code block">{ }</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+      <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="clear" title="Clear formatting">Clear</button>
+      <span class="wc" id="wc20">0 words</span>
+    </div>
+    <div class="editor" id="ed20" contenteditable="true" role="textbox" aria-multiline="true" data-title="Making an inherited API deployable" data-placeholder="Type your answer here. Use the toolbar for code, lists and emphasis."></div>
+  </div>
+</section>
+    <div class="card submitcard">
+      <p><strong>Finished?</strong> Submit your answers.</p>
+      <p class="hint">⚠️ Once you submit, the test will end and your answers will be locked — you won't be able to make further changes.</p>
+      <button class="btn" id="finishBtn" type="button">Submit answers</button>
+      <button class="btn secondary" id="downloadBtn" type="button" hidden>Download answers file</button>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+  <div class="card submitcard" id="completeCard" hidden>
+    <h1>Thank you!</h1>
+    <p>Your answers have been submitted successfully.</p>
+    <p>Our team will review your responses, and we'll be in touch about next steps. You may now close this page.</p>
+  </div>
+</main>
+
+<div class="overlay" id="fsprompt" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fsTitle">
+    <h3 id="fsTitle">You left full screen</h3>
+    <p>The screening runs in full screen. Leaving full screen is recorded. Please return to full screen to continue.</p>
+    <div class="row"><button class="btn" id="fsReturn" type="button">Return to full screen</button></div>
+  </div>
+</div>
+<div class="overlay" id="confirm" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">Finish the screening?</h3>
+    <p id="confirmText"></p>
+    <div class="row">
+      <button class="btn secondary" id="cancelFinish" type="button">Keep working</button>
+      <button class="btn" id="confirmFinish" type="button">Submit answers</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Paste the Web App URL from your Apps Script deployment here (Deploy > New deployment > Web app).
+  // Leave the placeholder as-is only for testing — without it, submission will not work (no local fallback).
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDnsq_xyB7DUQTP3WntiOGPi7BhIaEV1aG2WYXV1fpseMbPuzq5RLWth3ED9yDe5oW/exec";
+  const DURATION = 45*60; // seconds
+  const $ = id => document.getElementById(id);
+  const editors = [...document.querySelectorAll('.editor')];
+  let startedAt = null, endedAt = null, remaining = DURATION, tick = null, finished = false, timeUp = false;
+
+  // ---------- focus / full-screen monitoring ----------
+  const log = [];            // {type, start, end, seconds}
+  let away = null;           // open "left page" episode
+  let fsOut = null;          // open "outside full screen" episode
+  const now = () => new Date();
+  const monitoring = () => startedAt && !finished;
+  const isHidden = () => document.visibilityState === 'hidden' || !document.hasFocus();
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  function enterFs(){
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { try { const p = req.call(el); if (p && p.catch) p.catch(()=>{}); } catch(e){} }
+  }
+  function exitFs(){
+    const ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (fsEl() && ex) { try { const p = ex.call(document); if (p && p.catch) p.catch(()=>{}); } catch(e){} }
+  }
+  function closeEp(ep, type){
+    if (!ep) return null;
+    const end = now(); log.push({type, start: ep.toISOString(), end: end.toISOString(), seconds: Math.max(0, Math.round((end-ep)/1000))});
+    showAwayBar(); return null;
+  }
+  function checkFocus(){
+    if (!monitoring()) return;
+    if (isHidden()) { if (!away) away = now(); }
+    else if (away) away = closeEp(away, 'left page');
+  }
+  document.addEventListener('visibilitychange', checkFocus);
+  window.addEventListener('blur', () => setTimeout(checkFocus, 0));
+  window.addEventListener('focus', checkFocus);
+  function onFsChange(){
+    if (!monitoring()) return;
+    if (!fsEl()) { if (!fsOut) fsOut = now(); $('fsprompt').hidden = false; }
+    else { if (fsOut) fsOut = closeEp(fsOut, 'exited full screen'); $('fsprompt').hidden = true; }
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  $('fsReturn').addEventListener('click', enterFs);
+  $('refs').addEventListener('click', enterFs);
+  function summary(){
+    const L = log.filter(e => e.type==='left page'), F = log.filter(e => e.type==='exited full screen');
+    const sum = a => a.reduce((t,e)=>t+e.seconds,0);
+    return { timesLeftPage: L.length, secondsAwayFromPage: sum(L), longestAwaySeconds: L.reduce((m,e)=>Math.max(m,e.seconds),0),
+             timesExitedFullScreen: F.length, secondsOutsideFullScreen: sum(F), events: log.slice() };
+  }
+  function showAwayBar(){
+    const s = summary();
+    if (!s.timesLeftPage && !s.timesExitedFullScreen) return;
+    $('awaybar').hidden = false;
+    $('awaytext').textContent = 'Recorded: left this page ' + s.timesLeftPage + (s.timesLeftPage===1?' time':' times') +
+      ' (' + fmt(s.secondsAwayFromPage) + ' away), exited full screen ' + s.timesExitedFullScreen + (s.timesExitedFullScreen===1?' time.':' times.');
+  }
+  setInterval(() => { $('refs').hidden = !monitoring() || !!fsEl(); }, 1000);
+
+  // ---------- start ----------
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function validate(){
+    const n = $('cname').value.trim(), e = $('cemail').value.trim();
+    $('cname-err').textContent = n.length < 2 ? 'Please enter your full name.' : '';
+    $('cemail-err').textContent = !emailRe.test(e) ? 'Please enter a valid email address.' : '';
+    return n.length >= 2 && emailRe.test(e);
+  }
+  $('startBtn').addEventListener('click', () => {
+    if (!validate()) return;
+    enterFs();
+    startedAt = new Date();
+    $('cname').readOnly = $('cemail').readOnly = true;
+    $('startBtn').disabled = true;
+    $('startHint').textContent = 'Started at ' + startedAt.toLocaleTimeString() + '. Good luck!';
+    $('quiz').hidden = false; $('qnav').hidden = false;
+    tick = setInterval(updateTimer, 1000); updateTimer();
+    document.getElementById('q1').scrollIntoView();
+  });
+
+  function fmt(s){ s=Math.max(0,s); const m=Math.floor(s/60), r=s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
+  function updateTimer(){
+    remaining = DURATION - Math.floor((Date.now() - startedAt.getTime())/1000);
+    $('timer').textContent = fmt(remaining);
+    $('timer').classList.toggle('low', remaining <= 5*60);
+    if (remaining <= 0 && !timeUp) onTimeUp();
+  }
+  function onTimeUp(){
+    timeUp = true; clearInterval(tick);
+    editors.forEach(ed => ed.setAttribute('contenteditable','false'));
+    $('timer').textContent = "Time's up";
+    $('status').className = 'status warn';
+    $('status').textContent = "Time's up. Your answers are locked — press Submit answers now.";
+    $('finishBtn').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  // ---------- editor toolbar ----------
+  document.querySelectorAll('.toolbar').forEach(tb => {
+    const ed = tb.nextElementSibling;
+    tb.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+    tb.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b || ed.getAttribute('contenteditable') !== 'true') return;
+      ed.focus();
+      const cmd = b.dataset.cmd;
+      if (cmd === 'code') wrapInline(ed, 'code');
+      else if (cmd === 'pre') toggleBlock('pre');
+      else if (cmd === 'clear') { document.execCommand('removeFormat'); unwrapCode(ed); document.execCommand('formatBlock', false, 'div'); }
+      else document.execCommand(cmd);
+      refresh(ed);
+    });
+  });
+  function wrapInline(ed, tag){
+    const sel = window.getSelection(); if (!sel.rangeCount) return;
+    const r = sel.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
+    const existing = (r.commonAncestorContainer.nodeType===1 ? r.commonAncestorContainer : r.commonAncestorContainer.parentElement).closest(tag);
+    if (existing && ed.contains(existing)) { existing.replaceWith(document.createTextNode(existing.textContent)); return; }
+    const txt = r.toString() || 'code';
+    const el = document.createElement(tag); el.textContent = txt;
+    r.deleteContents(); r.insertNode(el);
+    const after = document.createTextNode('\u200B'); el.after(after);
+    sel.removeAllRanges(); const nr = document.createRange(); nr.setStart(after, 1); nr.collapse(true); sel.addRange(nr);
+  }
+  function unwrapCode(ed){ ed.querySelectorAll('code').forEach(c => c.replaceWith(document.createTextNode(c.textContent))); }
+  function toggleBlock(tag){
+    const sel = window.getSelection(); if (!sel.rangeCount) return;
+    let n = sel.anchorNode; n = n && (n.nodeType===1 ? n : n.parentElement);
+    const inBlock = n && n.closest(tag);
+    document.execCommand('formatBlock', false, inBlock ? 'div' : tag);
+  }
+  editors.forEach(ed => {
+    ed.addEventListener('input', () => refresh(ed));
+    ed.addEventListener('paste', e => { e.preventDefault(); const t = (e.clipboardData||window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, t); });
+    ed.addEventListener('drop', e => e.preventDefault());
+    ed.addEventListener('keydown', e => {
+      if (e.key === 'Tab') { e.preventDefault(); document.execCommand('insertText', false, '    '); }
+    });
+  });
+  function words(ed){ const t = ed.innerText.replace(/\u200B/g,'').trim(); return t ? t.split(/\s+/).length : 0; }
+  function refresh(ed){
+    const i = ed.id.slice(2), w = words(ed);
+    $('wc'+i).textContent = w + (w===1?' word':' words');
+    $('nav'+i).classList.toggle('done', w > 0);
+    const done = editors.filter(x => words(x) > 0).length;
+    $('progress').textContent = done + ' of 20 answered';
+  }
+
+  window.addEventListener('beforeunload', e => { if (startedAt && !finished) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- finish ----------
+  $('finishBtn').addEventListener('click', () => {
+    if (!startedAt) return;
+    const blank = editors.map((ed,i)=>words(ed)===0 ? i+1 : null).filter(Boolean);
+    $('confirmText').textContent = (blank.length
+      ? 'You have not answered question' + (blank.length>1?'s ':' ') + blank.join(', ') + '. '
+      : 'All 20 questions have an answer. ')
+      + (timeUp ? '' : 'Once you finish, your answers are locked and the timer stops.');
+    if (finished) { finish(); return; }
+    $('confirm').hidden = false; $('confirmFinish').focus();
+  });
+  $('cancelFinish').addEventListener('click', () => { $('confirm').hidden = true; });
+  $('confirmFinish').addEventListener('click', () => { $('confirm').hidden = true; finish(); });
+
+  const ALLOWED = new Set(['B','STRONG','I','EM','CODE','PRE','UL','OL','LI','P','DIV','BR']);
+  function clean(node){
+    const out = document.createElement('div');
+    (function walk(src, dst){
+      src.childNodes.forEach(c => {
+        if (c.nodeType === 3) dst.appendChild(document.createTextNode(c.textContent.replace(/\u200B/g,'')));
+        else if (c.nodeType === 1) {
+          if (ALLOWED.has(c.tagName)) { const e = document.createElement(c.tagName.toLowerCase()); dst.appendChild(e); walk(c, e); }
+          else walk(c, dst);
+        }
+      });
+    })(node, out);
+    return out.innerHTML;
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function finish(){
+    if (!finished) {
+      away = closeEp(away, 'left page'); fsOut = closeEp(fsOut, 'exited full screen');
+      finished = true; endedAt = new Date(); $('fsprompt').hidden = true; clearInterval(tick); editors.forEach(ed => ed.setAttribute('contenteditable','false')); }
+    exitFs();
+    const name = $('cname').value.trim(), email = $('cemail').value.trim();
+    const focus = summary();
+    const used = Math.min(DURATION, Math.round((endedAt - startedAt)/1000));
+    const data = {
+      form: '.NET Technical Screening – Round 1', version: 1,
+      candidate: { name, email },
+      startedAt: startedAt.toISOString(), finishedAt: endedAt.toISOString(),
+      timeUsedSeconds: used, timeLimitSeconds: DURATION, finishedAfterTimeUp: timeUp,
+      focusMonitoring: focus,
+      answers: editors.map((ed,i) => ({ question: i+1, title: ed.dataset.title, words: words(ed),
+                                        text: ed.innerText.replace(/\u200B/g,'').trim(), html: clean(ed) }))
+    };
+    const evRows = focus.events.map((e,i)=>`<tr><td>${i+1}</td><td>${esc(e.type)}</td><td>${esc(new Date(e.start).toLocaleTimeString())}</td><td>${esc(new Date(e.end).toLocaleTimeString())}</td><td>${fmt(e.seconds)}</td></tr>`).join('');
+    const flag = (focus.timesLeftPage || focus.timesExitedFullScreen) ? 'flag' : 'clean';
+    const focusHtml = `<section class="focus ${flag}"><h2>Focus monitoring</h2>
+<table class="sum"><tr><td>Times left the page (other tab, window or app)</td><td><strong>${focus.timesLeftPage}</strong></td></tr>
+<tr><td>Total time away from the page</td><td><strong>${fmt(focus.secondsAwayFromPage)}</strong></td></tr>
+<tr><td>Longest single time away</td><td>${fmt(focus.longestAwaySeconds)}</td></tr>
+<tr><td>Times exited full screen</td><td><strong>${focus.timesExitedFullScreen}</strong></td></tr>
+<tr><td>Total time outside full screen</td><td>${fmt(focus.secondsOutsideFullScreen)}</td></tr></table>
+${focus.events.length ? `<table class="ev"><thead><tr><th>#</th><th>Event</th><th>From</th><th>To</th><th>Duration</th></tr></thead><tbody>${evRows}</tbody></table>` : '<p>No focus or full-screen events recorded.</p>'}</section>`;
+    const rows = data.answers.map(a => `<section><h2>Question ${a.question}: ${esc(a.title)}</h2><div class="a">${a.html || '<em>(no answer)</em>'}</div></section>`).join('');
+    const doc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Screening answers – ${esc(name)}</title>
+<style>body{font:15px/1.6 "Segoe UI",Arial,sans-serif;color:#1a1a1a;max-width:860px;margin:30px auto;padding:0 20px}
+h1{font-size:24px;margin:0 0 6px}.meta{color:#6b6b6b;font-size:14px;margin-bottom:24px}
+section{border-top:2px solid #C8102E;padding:12px 0 18px}h2{font-size:17px;margin:0 0 8px}
+table{border-collapse:collapse;margin:6px 0 10px}td,th{border:1px solid #d9d9d9;padding:5px 10px;font-size:14px;text-align:left}
+.focus.flag{background:#FBECEE;padding:12px 16px;border-radius:8px}.focus.clean{background:#eef6f1;padding:12px 16px;border-radius:8px}
+code,pre{font-family:Consolas,Menlo,monospace;background:#f4f4f6;border-radius:4px}code{padding:.1em .3em}pre{padding:10px 12px;white-space:pre-wrap}</style></head>
+<body><h1>.NET Technical Screening – Round 1</h1>
+<div class="meta">Candidate: <strong>${esc(name)}</strong> &lt;${esc(email)}&gt;<br>Started ${esc(startedAt.toLocaleString())} · Finished ${esc(endedAt.toLocaleString())} · Time used ${fmt(used)} of 45:00${timeUp?' · time limit reached':''}</div>
+${focusHtml}
+${rows}
+<script type="application/json" id="screening-data">${JSON.stringify(data).replace(/</g,'\\u003c')}<\/script>
+</body></html>`;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'candidate';
+    const fname = `dotnet-screening-${slug}.html`;
+    lastDoc = doc; lastFname = fname;
+
+    const scriptConfigured = SCRIPT_URL && SCRIPT_URL.indexOf('PASTE_YOUR') === -1;
+    $('finishBtn').disabled = true;
+    $('status').className = 'status ok';
+    $('status').textContent = 'Submitting your answers…';
+
+    const uploadPromise = scriptConfigured
+      ? fetch(SCRIPT_URL, {
+          method: 'POST',
+          // text/plain avoids a CORS preflight; the Apps Script side still JSON.parses the body.
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ candidateName: name, candidateEmail: email, fileName: fname, htmlContent: doc })
+        }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(() => ({status:'success'})); })
+      : Promise.reject(new Error('Online submission is not configured for this screening link.'));
+
+    uploadPromise.then(() => {
+      submitted = true;
+      $('introCard').hidden = true;
+      $('quiz').hidden = true;
+      $('qnav').hidden = true;
+      $('awaybar').hidden = true;
+      $('completeCard').hidden = false;
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }).catch(() => {
+      submitAttempts++;
+      $('finishBtn').disabled = false;
+      $('finishBtn').textContent = 'Retry submission';
+      if (submitAttempts >= 3) {
+        $('status').className = 'status warn';
+        $('status').textContent = 'Your answers are locked, but the submission still isn\'t going through after ' + submitAttempts + ' tries. You can keep retrying, or download your answers file below and email it to us instead.';
+        $('downloadBtn').hidden = false;
+      } else {
+        $('status').className = 'status warn';
+        $('status').textContent = 'Your answers are locked, but the submission didn\'t go through. Please check your connection and press Submit answers again.';
+      }
+    });
+  }
+  let submitted = false, submitAttempts = 0, lastDoc = null, lastFname = null;
+  $('downloadBtn').addEventListener('click', () => {
+    if (!lastDoc) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lastDoc], {type:'text/html'})); a.download = lastFname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  });
+  window.addEventListener('beforeunload', e => { if (finished && !submitted) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
+</body>
+</html>

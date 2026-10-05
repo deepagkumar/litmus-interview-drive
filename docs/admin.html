@@ -16,7 +16,7 @@
 </script>
 <title>Litmus Admin</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/app.css?v=5">
+<link rel="stylesheet" href="assets/app.css?v=6">
 </head>
 <body>
 <header class="top">
@@ -65,53 +65,81 @@
     <div class="steps"><span id="step1" class="on">1 · Details &amp; questions</span><span id="step2">2 · Review &amp; finalize</span></div>
 
     <div id="formStep">
-      <div class="fields">
-        <div class="full">
-          <label for="fTitle">Drive title <span class="req">*</span></label>
-          <input id="fTitle" type="text" maxlength="200" placeholder="e.g. Java Backend Screening – Round 1">
+      <!-- 1. import -->
+      <section class="esec import" id="importZone">
+        <h3 class="esec-title">Start from a JSON file</h3>
+        <p class="hint">Upload or paste a question file (see the <a href="samples/dotnet-screening-round1.json" download>sample</a> and the README for the format).
+          Its questions are listed below, ready to edit, and any drive details in it (title, time limit…) fill the empty fields.
+          <span id="importSkipHint">Or skip this and add questions by hand.</span></p>
+        <div class="importrow">
+          <label class="btn secondary filebtn">Choose JSON file<input id="fFile" type="file" accept=".json,application/json"></label>
+          <span class="hint">or drag a file here</span>
         </div>
-        <div class="full">
-          <label for="fRole">Role / subtitle</label>
-          <input id="fRole" type="text" maxlength="200" placeholder="e.g. Senior Backend Engineer (5+ years)">
+        <details class="paste">
+          <summary>…or paste JSON</summary>
+          <textarea id="fPaste" class="mono" style="min-height:160px;margin-top:8px" spellcheck="false" aria-label="Paste question JSON"></textarea>
+          <button class="btn small secondary" id="loadPaste" type="button" style="margin-top:8px">Load pasted JSON</button>
+        </details>
+        <div class="loadmode" id="loadMode" hidden role="radiogroup" aria-label="What to do with the loaded questions">
+          <label class="check"><input type="radio" name="loadMode" value="replace" checked> Replace the current questions</label>
+          <label class="check"><input type="radio" name="loadMode" value="append"> Add to the current questions</label>
         </div>
-        <div class="full">
-          <label for="fDescription">Welcome text</label>
-          <textarea id="fDescription" maxlength="4000" placeholder="Shown to candidates when they select this drive."></textarea>
-          <div class="help">Supports <code>`code`</code>, <code>**bold**</code> and <code>*italic*</code>. Blank line = new paragraph.</div>
+        <div id="qStatus"></div>
+      </section>
+
+      <!-- 2. details -->
+      <section class="esec">
+        <h3 class="esec-title">Drive details</h3>
+        <div class="fields">
+          <div class="full">
+            <label for="fTitle">Drive title <span class="req">*</span></label>
+            <input id="fTitle" type="text" maxlength="200" placeholder="e.g. Java Backend Screening – Round 1">
+          </div>
+          <div class="full">
+            <label for="fRole">Role / subtitle</label>
+            <input id="fRole" type="text" maxlength="200" placeholder="e.g. Senior Backend Engineer (5+ years)">
+          </div>
+          <div class="full">
+            <label for="fDescription">Welcome text</label>
+            <textarea id="fDescription" maxlength="4000" placeholder="Shown to candidates when they select this drive."></textarea>
+            <div class="help">Supports <code>`code`</code>, <code>**bold**</code> and <code>*italic*</code>. Blank line = new paragraph.</div>
+          </div>
+          <div class="full">
+            <label for="fInstructions">Drive-specific instructions</label>
+            <textarea id="fInstructions" maxlength="4000" placeholder="One instruction per line, e.g.&#10;Assume Java 21 unless a question says otherwise.&#10;Answer without running the code or using AI tools."></textarea>
+            <div class="help">One per line. Shown as a bulleted list, alongside the standard rules (timer, full screen, submission).</div>
+          </div>
+          <div class="full">
+            <label for="fNotice">Highlighted notice</label>
+            <textarea id="fNotice" maxlength="2000" style="min-height:60px" placeholder="Optional, e.g. how answers are evaluated."></textarea>
+          </div>
+          <div>
+            <label for="fDuration">Time limit (minutes) <span class="req">*</span></label>
+            <input id="fDuration" type="number" min="1" max="300" step="1">
+          </div>
         </div>
-        <div class="full">
-          <label for="fInstructions">Drive-specific instructions</label>
-          <textarea id="fInstructions" maxlength="4000" placeholder="One instruction per line, e.g.&#10;Assume Java 21 unless a question says otherwise.&#10;Answer without running the code or using AI tools."></textarea>
-          <div class="help">One per line. Shown as a bulleted list, alongside the standard rules (timer, full screen, submission).</div>
+      </section>
+
+      <!-- 3. questions -->
+      <section class="esec">
+        <div class="toolbar-row">
+          <h3 class="esec-title">Questions <span class="badge closed" id="qCount">0</span></h3>
+          <button class="btn small" id="addQBtn" type="button">+ Add question</button>
         </div>
-        <div class="full">
-          <label for="fNotice">Highlighted notice</label>
-          <textarea id="fNotice" maxlength="2000" style="min-height:60px" placeholder="Optional, e.g. how answers are evaluated."></textarea>
+        <ol class="qlist" id="qList"></ol>
+        <div class="status" id="qListStatus" aria-live="polite"></div>
+        <div class="fields" style="margin-top:14px">
+          <div>
+            <label for="fCount">Questions per candidate <span class="req">*</span></label>
+            <input id="fCount" type="number" min="1" step="1">
+            <div class="help" id="countHelp">Add questions first.</div>
+          </div>
+          <div style="align-self:center">
+            <label class="check"><input type="checkbox" id="fShuffle"> Shuffle question order for each candidate</label>
+          </div>
         </div>
-        <div>
-          <label for="fDuration">Time limit (minutes) <span class="req">*</span></label>
-          <input id="fDuration" type="number" min="1" max="300" step="1">
-        </div>
-        <div>
-          <label for="fCount">Questions per candidate <span class="req">*</span></label>
-          <input id="fCount" type="number" min="1" step="1">
-          <div class="help" id="countHelp">Upload questions first.</div>
-        </div>
-        <div class="full">
-          <label class="check"><input type="checkbox" id="fShuffle"> Shuffle question order for each candidate</label>
-        </div>
-        <div class="full">
-          <label for="fFile">Questions (JSON) <span class="req">*</span></label>
-          <input id="fFile" type="file" accept=".json,application/json">
-          <details class="paste">
-            <summary>…or paste JSON</summary>
-            <textarea id="fPaste" style="min-height:160px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;margin-top:8px" spellcheck="false"></textarea>
-            <button class="btn small secondary" id="loadPaste" type="button" style="margin-top:8px">Load pasted JSON</button>
-          </details>
-          <div class="help">Format: see the <a href="samples/dotnet-screening-round1.json" download>sample file</a> and the README. Drive details in the file (title, time limit…) fill any empty fields above.</div>
-          <div id="qStatus"></div>
-        </div>
-      </div>
+      </section>
+
       <div class="startrow">
         <button class="btn" id="reviewBtn" type="button">Review drive →</button>
         <span class="status err" id="formErr"></span>
@@ -160,11 +188,65 @@
     </div>
   </div>
 </div>
+<div class="overlay" id="qDialog" hidden>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="qDialogTitle">
+    <h3 id="qDialogTitle">Edit question</h3>
+    <div class="qedit">
+      <div class="fields qform" id="qForm" style="grid-template-columns:1fr">
+        <div>
+          <label for="qTitle">Question title <span class="req">*</span></label>
+          <input id="qTitle" type="text" maxlength="300" placeholder="e.g. Spot the bug in the retry loop">
+        </div>
+        <div>
+          <label for="qId">Question ID</label>
+          <input id="qId" type="text" maxlength="40" spellcheck="false">
+          <div class="help">Identifies the question in results files. Letters, digits, <code>_ . -</code></div>
+        </div>
+        <div>
+          <span class="flabel">Content</span>
+          <div id="qBlocks"></div>
+          <div class="addblocks"><span class="hint">Add:</span>
+            <button type="button" class="btn small secondary" data-add="text">Text</button>
+            <button type="button" class="btn small secondary" data-add="code">Code</button>
+            <button type="button" class="btn small secondary" data-add="list">List</button>
+            <button type="button" class="btn small secondary" data-add="options">Answer options</button>
+            <button type="button" class="btn small secondary" data-add="table">Table</button>
+          </div>
+        </div>
+        <div>
+          <label for="qAsk">Ask</label>
+          <textarea id="qAsk" rows="3" placeholder="What the candidate should answer, e.g. What's wrong, and how would you fix it?"></textarea>
+          <div class="help">Shown highlighted at the end of the question.</div>
+        </div>
+        <div>
+          <label for="qRubric">Evaluator notes</label>
+          <textarea id="qRubric" rows="3" placeholder="Expected answer / scoring guidance. Never shown to candidates."></textarea>
+          <div class="help">Added to each submission file for reviewers. Never sent to candidates.</div>
+        </div>
+      </div>
+      <div class="qedit-preview">
+        <div class="flabel">Preview</div>
+        <div id="qPreview"></div>
+      </div>
+    </div>
+    <ul class="msgs err" id="qErrs" hidden></ul>
+    <div class="row">
+      <button class="btn secondary" id="qCancel" type="button">Cancel</button>
+      <button class="btn" id="qSave" type="button">Save question</button>
+    </div>
+  </div>
+</div>
+<datalist id="langList">
+  <option value="csharp"><option value="java"><option value="python"><option value="javascript"><option value="typescript">
+  <option value="go"><option value="kotlin"><option value="sql"><option value="cpp"><option value="c"><option value="rust">
+  <option value="ruby"><option value="php"><option value="swift"><option value="scala"><option value="bash"><option value="json">
+  <option value="yaml"><option value="xml"><option value="html"><option value="css">
+</datalist>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="assets/config.js?v=5"></script>
-<script src="assets/common.js?v=5"></script>
+<script src="assets/config.js?v=6"></script>
+<script src="assets/common.js?v=6"></script>
 <script>
 (function(){
   const A = window.App;
@@ -173,7 +255,8 @@
   let adminKey = '';
   let drives = [];
   let editing = null;     // {id, status, createdAt} when editing an existing drive; null for a new one
-  let bank = null;        // {questions, source} — the loaded question bank
+  let questions = [];     // the question bank being edited (normalized question objects)
+  let dirty = false;      // unsaved changes in the editor
   let pending = null;     // drive object built for review
 
   document.title = (A.config.appName || 'Litmus') + ' Admin';
@@ -238,8 +321,15 @@
     link:   '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
     json:   '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>',
     trash:  '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
-    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    up:     '<path d="m18 15-6-6-6 6"/>',
+    down:   '<path d="m6 9 6 6 6-6"/>'
   };
+  // Icon button with arbitrary data attributes (used by the question list and block editor).
+  function iconB(attrs, iconName, tipTitle, tipText, cls, disabled){
+    return '<button type="button" class="iconbtn' + (cls ? ' ' + cls : '') + '" ' + attrs + ' data-tip-title="' + A.esc(tipTitle) + '" data-tip="' + A.esc(tipText) +
+      '" aria-label="' + A.esc(tipTitle + '. ' + tipText) + '"' + (disabled ? ' disabled' : '') + '>' + icon(iconName) + '</button>';
+  }
   const icon = name => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON_PATHS[name] + '</svg>';
   function iconBtn(act, id, iconName, tipTitle, tipText, extraClass){
     return '<button type="button" class="iconbtn' + (extraClass ? ' ' + extraClass : '') + '" data-act="' + act + '" data-id="' + A.esc(id) +
@@ -356,8 +446,15 @@
   document.addEventListener('focusout', hideTip);
   window.addEventListener('scroll', hideTip, true);
 
-  // ---------- editor: details + questions ----------
+  // ---------- editor: import, details, questions ----------
   const F = { title: 'fTitle', role: 'fRole', description: 'fDescription', notice: 'fNotice' };
+  const okMsg = t => '<ul class="msgs ok"><li>✓ ' + A.esc(t) + '</li></ul>';
+  const errMsg = list => '<ul class="msgs err">' + list.slice(0, 50).map(m => '<li>' + A.esc(m) + '</li>').join('') +
+    (list.length > 50 ? '<li>…and ' + (list.length - 50) + ' more</li>' : '') + '</ul>';
+  const clone = o => JSON.parse(JSON.stringify(o));
+  // First free id of the form q<n>.
+  function nextQid(taken){ let n = 1; while (taken.has('q' + n)) n++; return 'q' + n; }
+
   function openEditor(d){
     editing = d ? { id: d.id, status: d.status, createdAt: d.createdAt } : null;
     pending = null;
@@ -368,56 +465,285 @@
     $('fCount').value = d ? d.questionCount : '';
     $('fShuffle').checked = !!(d && d.shuffle);
     $('fOpen').checked = d ? d.status === 'open' : true;
-    $('fFile').value = ''; $('fPaste').value = '';
-    bank = d ? { questions: d.questions, source: 'the saved drive' } : null;
-    $('qStatus').innerHTML = bank ? okMsg(A.plural(bank.questions.length, 'question') + ' loaded from the saved drive. Upload a new file to replace them.') : '';
-    $('formErr').textContent = '';
-    updateCountHelp();
+    $('fFile').value = ''; $('fPaste').value = ''; $('fPaste').closest('details').open = false;
+    document.querySelector('input[name=loadMode][value=replace]').checked = true;
+    $('importSkipHint').hidden = !!d;
+    $('qStatus').innerHTML = ''; $('qListStatus').textContent = ''; $('formErr').textContent = '';
+    questions = d ? clone(d.questions) : [];
+    renderQuestions();
+    dirty = false; resetCancel();
     setStep(1);
     show('editorCard');
     window.scrollTo({ top: 0 });
   }
   $('newBtn').addEventListener('click', () => openEditor(null));
-  $('cancelEdit').addEventListener('click', () => show('listCard'));
 
-  const okMsg = t => '<ul class="msgs ok"><li>✓ ' + A.esc(t) + '</li></ul>';
+  // Cancel asks for a second click when there are unsaved changes.
+  let cancelTimer = null;
+  function resetCancel(){ clearTimeout(cancelTimer); cancelTimer = null; $('cancelEdit').textContent = 'Cancel'; }
+  $('cancelEdit').addEventListener('click', () => {
+    if (dirty && !cancelTimer) { $('cancelEdit').textContent = 'Discard changes?'; cancelTimer = setTimeout(resetCancel, 4000); return; }
+    resetCancel(); dirty = false; show('listCard');
+  });
+  $('formStep').addEventListener('input', e => { if (!e.target.closest('#importZone')) dirty = true; });
+  window.addEventListener('beforeunload', e => { if (dirty && !$('editorCard').hidden) { e.preventDefault(); e.returnValue = ''; } });
+
+  // Replace the bank. "Questions per candidate" follows the bank size while it means "all".
+  function setQuestions(list){
+    const old = questions.length, c = parseInt($('fCount').value, 10);
+    questions = list;
+    if (!c || c === old || c > list.length) $('fCount').value = list.length || '';
+    dirty = true;
+    renderQuestions();
+  }
   function updateCountHelp(){
-    const n = bank ? bank.questions.length : 0;
+    const n = questions.length;
     $('fCount').max = n || '';
-    $('countHelp').textContent = !n ? 'Upload questions first.'
-      : 'The bank has ' + A.plural(n, 'question') + '. Use fewer to give each candidate a random subset.';
+    $('countHelp').textContent = !n ? 'Add questions first.'
+      : 'Out of ' + A.plural(n, 'question') + '. Use fewer to give each candidate a random subset.';
   }
 
+  // ---------- import ----------
   function loadQuestionsText(text, source){
     let raw;
     try { raw = JSON.parse(text); }
-    catch (e) { $('qStatus').innerHTML = '<ul class="msgs err"><li>Not valid JSON: ' + A.esc(e.message) + '</li></ul>'; return; }
+    catch (e) { $('qStatus').innerHTML = errMsg(['Not valid JSON: ' + e.message]); return false; }
     const r = A.normalizeDriveFile(raw);
-    if (r.errors.length) {
-      $('qStatus').innerHTML = '<ul class="msgs err">' + r.errors.slice(0, 50).map(m => '<li>' + A.esc(m) + '</li>').join('') +
-        (r.errors.length > 50 ? '<li>…and ' + (r.errors.length - 50) + ' more</li>' : '') + '</ul>';
-      return;
+    if (r.errors.length) { $('qStatus').innerHTML = errMsg(r.errors); return false; }
+    const append = questions.length && document.querySelector('input[name=loadMode]:checked').value === 'append';
+    const countWasEmpty = !$('fCount').value;
+    if (append) {
+      const taken = new Set(questions.map(q => q.id));
+      const added = r.questions.map(q => { if (taken.has(q.id)) q = Object.assign({}, q, { id: nextQid(taken) }); taken.add(q.id); return q; });
+      setQuestions(questions.concat(added));
+    } else {
+      setQuestions(r.questions);
     }
-    bank = { questions: r.questions, source };
     // Drive-level fields in the file only fill fields that are still empty.
     const filled = [];
     Object.keys(F).forEach(k => { if (r.meta[k] && !$(F[k]).value.trim()) { $(F[k]).value = r.meta[k]; filled.push(k); } });
     if (r.meta.instructions && !$('fInstructions').value.trim()) { $('fInstructions').value = r.meta.instructions.join('\n'); filled.push('instructions'); }
     if (r.meta.durationMinutes && !$('fDuration').value) { $('fDuration').value = r.meta.durationMinutes; filled.push('time limit'); }
-    if (!$('fCount').value || +$('fCount').value > r.questions.length) {
-      $('fCount').value = Math.min(r.meta.questionCount || r.questions.length, r.questions.length); filled.push('questions per candidate');
-    }
+    if (r.meta.questionCount && countWasEmpty) { $('fCount').value = Math.min(r.meta.questionCount, questions.length); filled.push('questions per candidate'); }
     if (typeof r.meta.shuffle === 'boolean' && !editing) $('fShuffle').checked = r.meta.shuffle;
-    updateCountHelp();
-    $('qStatus').innerHTML = okMsg(A.plural(r.questions.length, 'question') + ' loaded from ' + source + '.' +
-      (filled.length ? ' Also filled from the file: ' + filled.join(', ') + '.' : ''));
+    $('qStatus').innerHTML = okMsg(A.plural(r.questions.length, 'question') + (append ? ' added' : ' loaded') + ' from ' + source + '.' +
+      (filled.length ? ' Also filled from the file: ' + filled.join(', ') + '.' : '') + ' Review and edit them below.');
+    $('fFile').value = '';   // lets the same file be chosen again
+    return true;
   }
-  $('fFile').addEventListener('change', () => {
-    const f = $('fFile').files[0]; if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { $('qStatus').innerHTML = '<ul class="msgs err"><li>File is larger than 5 MB.</li></ul>'; return; }
+  function loadFile(f){
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { $('qStatus').innerHTML = errMsg(['File is larger than 5 MB.']); return; }
     f.text().then(t => loadQuestionsText(t, f.name));
+  }
+  $('fFile').addEventListener('change', () => loadFile($('fFile').files[0]));
+  $('loadPaste').addEventListener('click', () => {
+    if (!$('fPaste').value.trim()) return;
+    if (loadQuestionsText($('fPaste').value, 'pasted JSON')) { $('fPaste').value = ''; $('fPaste').closest('details').open = false; }
   });
-  $('loadPaste').addEventListener('click', () => { if ($('fPaste').value.trim()) loadQuestionsText($('fPaste').value, 'pasted JSON'); });
+  const zone = $('importZone');
+  ['dragenter', 'dragover'].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(t => zone.addEventListener(t, e => { if (t === 'dragleave' && zone.contains(e.relatedTarget)) return; zone.classList.remove('drag'); }));
+  zone.addEventListener('drop', e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+
+  // ---------- question list ----------
+  const BLOCK_LABEL = { text: 'Text', code: 'Code', list: 'List', options: 'Answer options', table: 'Table' };
+  function describe(q){
+    const parts = q.blocks.map(b => b.type === 'code' ? 'code' + (b.language ? ' (' + b.language + ')' : '')
+                                  : b.type === 'options' ? b.items.length + ' options' : BLOCK_LABEL[b.type].toLowerCase());
+    if (q.ask) parts.push('ask');
+    if (q.rubric) parts.push('evaluator notes');
+    return parts.join(' · ');
+  }
+  function renderQuestions(){
+    $('qCount').textContent = questions.length;
+    $('loadMode').hidden = !questions.length;
+    $('qList').innerHTML = !questions.length
+      ? '<li class="qempty">No questions yet. Load a JSON file above, or press <strong>+ Add question</strong>.</li>'
+      : questions.map((q, i) => `<li class="qrow" data-qi="${i}">
+          <span class="qnum">${i + 1}</span>
+          <button type="button" class="qmain" data-qact="edit" data-qi="${i}" aria-label="${A.esc('Edit question ' + (i + 1) + ': ' + (q.title || q.id))}"><strong>${A.esc(q.title || '(untitled)')}</strong><small>${A.esc(q.id)} · ${A.esc(describe(q))}</small></button>
+          <div class="qacts">
+            ${iconB('data-qact="up" data-qi="' + i + '"', 'up', 'Move up', 'Show this question earlier. Order matters when shuffle is off.', 'sm', i === 0)}
+            ${iconB('data-qact="down" data-qi="' + i + '"', 'down', 'Move down', 'Show this question later. Order matters when shuffle is off.', 'sm', i === questions.length - 1)}
+            ${iconB('data-qact="edit" data-qi="' + i + '"', 'edit', 'Edit question', 'Change the title, content, ask or evaluator notes, with a live preview.', 'sm')}
+            ${iconB('data-qact="delete" data-qi="' + i + '"', 'trash', 'Delete question', 'Remove this question from the drive. You can undo right after.', 'sm danger')}
+          </div></li>`).join('');
+    updateCountHelp();
+  }
+  let undo = null;
+  $('qList').addEventListener('click', e => {
+    const b = e.target.closest('[data-qact]'); if (!b || b.disabled) return;
+    hideTip();
+    const i = +b.dataset.qi, list = questions.slice();
+    switch (b.dataset.qact) {
+      case 'edit': return openQuestion(i);
+      case 'up': case 'down': {
+        const j = b.dataset.qact === 'up' ? i - 1 : i + 1;
+        [list[i], list[j]] = [list[j], list[i]];
+        setQuestions(list);
+        const btn = $('qList').querySelector('[data-qact="' + b.dataset.qact + '"][data-qi="' + j + '"]');
+        if (btn && !btn.disabled) btn.focus();
+        $('qListStatus').className = 'status'; $('qListStatus').textContent = '';
+        return;
+      }
+      case 'delete': {
+        const [removed] = list.splice(i, 1);
+        undo = { q: removed, i };
+        setQuestions(list);
+        $('qListStatus').className = 'status';
+        $('qListStatus').innerHTML = 'Deleted “' + A.esc(removed.title || removed.id) + '”. <button type="button" class="linkbtn" id="undoDelete">Undo</button>';
+        return;
+      }
+    }
+  });
+  $('qListStatus').addEventListener('click', e => {
+    if (e.target.id !== 'undoDelete' || !undo) return;
+    const list = questions.slice(); list.splice(undo.i, 0, undo.q); undo = null;
+    setQuestions(list);
+    $('qListStatus').textContent = '';
+  });
+  $('addQBtn').addEventListener('click', () => openQuestion(-1));
+
+  // ---------- question editor dialog ----------
+  // Blocks are edited in a text-friendly form (lists as one item per line, tables as "a | b" lines).
+  const splitLines = s => s.split('\n').map(x => x.trim()).filter(Boolean);
+  const splitCells = s => s.split(/(?<!\\)\|/).map(x => x.trim().replace(/\\\|/g, '|'));
+  const joinCells = cells => cells.map(c => c.replace(/\|/g, '\\|')).join(' | ');
+  function toEditable(b){
+    switch (b.type) {
+      case 'text': return { type: 'text', text: b.text };
+      case 'code': return { type: 'code', language: b.language || '', code: b.code };
+      case 'list': return { type: 'list', ordered: !!b.ordered, items: b.items.join('\n') };
+      case 'options': return { type: 'options', items: b.items.join('\n') };
+      case 'table': return { type: 'table', columns: joinCells(b.columns), rows: b.rows.map(joinCells).join('\n') };
+    }
+  }
+  function fromEditable(e){
+    switch (e.type) {
+      case 'text': return { type: 'text', text: e.text };
+      case 'code': return { type: 'code', language: e.language.trim(), code: e.code };
+      case 'list': return { type: 'list', ordered: e.ordered, items: splitLines(e.items) };
+      case 'options': return { type: 'options', items: splitLines(e.items) };
+      case 'table': return { type: 'table', columns: splitCells(e.columns), rows: splitLines(e.rows).map(splitCells) };
+    }
+  }
+  const isEmptyBlock = e => e.type === 'table' ? !e.columns.trim() && !e.rows.trim()
+                         : !String(e.type === 'code' ? e.code : e.type === 'text' ? e.text : e.items).trim();
+  const NEW_BLOCK = { text: { text: '' }, code: { language: '', code: '' }, list: { ordered: false, items: '' }, options: { items: '' }, table: { columns: '', rows: '' } };
+
+  let qEdit = null;   // {index (-1 = new), blocks: editable blocks, dirty}
+  function openQuestion(index){
+    const q = index >= 0 ? questions[index] : { id: nextQid(new Set(questions.map(x => x.id))), title: '', blocks: [{ type: 'text', text: '' }] };
+    qEdit = { index, blocks: q.blocks.map(toEditable), dirty: false };
+    $('qDialogTitle').textContent = index >= 0 ? 'Edit question ' + (index + 1) : 'Add question ' + (questions.length + 1);
+    $('qTitle').value = q.title; $('qId').value = q.id; $('qAsk').value = q.ask || ''; $('qRubric').value = q.rubric || '';
+    $('qErrs').hidden = true; resetQCancel();
+    renderBlocks(); updatePreview();
+    $('qDialog').hidden = false;
+    $('qDialog').querySelector('.dialog').scrollTop = 0;
+    $('qTitle').focus();
+  }
+  function closeQuestion(){ hideTip(); $('qDialog').hidden = true; qEdit = null; }
+
+  function blockHtml(b, i){
+    const n = qEdit.blocks.length, label = BLOCK_LABEL[b.type];
+    const ta = (f, v, rows, ph, cls) => `<textarea data-f="${f}" rows="${rows}" placeholder="${A.esc(ph)}" aria-label="${A.esc(label + ' block ' + (i + 1))}"` +
+      `${cls ? ' class="' + cls + '" wrap="off"' : ''} spellcheck="${cls === 'mono' ? 'false' : 'true'}">${A.esc(v)}</textarea>`;
+    let body = '';
+    switch (b.type) {
+      case 'text': body = ta('text', b.text, 3, 'Paragraph text. Supports `code`, **bold**, *italic*. Blank line = new paragraph.'); break;
+      case 'code': body = `<input type="text" data-f="language" list="langList" value="${A.esc(b.language)}" placeholder="Language for highlighting, e.g. java, python, csharp, sql" aria-label="Code language">` +
+                          ta('code', b.code, 8, 'Paste the code here', 'mono'); break;
+      case 'list': body = `<label class="check"><input type="checkbox" data-f="ordered"${b.ordered ? ' checked' : ''}> Numbered list</label>` +
+                          ta('items', b.items, 3, 'One item per line'); break;
+      case 'options': body = ta('items', b.items, 4, 'One option per line. Shown to candidates as A., B., C. …'); break;
+      case 'table': body = `<input type="text" data-f="columns" value="${A.esc(b.columns)}" placeholder="Column headings separated by |   e.g.  #  |  Scenario" aria-label="Table columns">` +
+                           ta('rows', b.rows, 4, 'One row per line, cells separated by |  (write \\| for a literal |)', 'mono'); break;
+    }
+    return `<div class="bedit" data-bi="${i}"><div class="bhead"><span class="btype">${label}</span>` +
+      iconB('data-bact="up" data-bi="' + i + '"', 'up', 'Move block up', 'Show this block before the previous one.', 'sm', i === 0) +
+      iconB('data-bact="down" data-bi="' + i + '"', 'down', 'Move block down', 'Show this block after the next one.', 'sm', i === n - 1) +
+      iconB('data-bact="delete" data-bi="' + i + '"', 'trash', 'Remove block', 'Remove this block from the question.', 'sm danger') +
+      `</div>${body}</div>`;
+  }
+  function renderBlocks(){
+    $('qBlocks').innerHTML = qEdit.blocks.length ? qEdit.blocks.map(blockHtml).join('')
+      : '<p class="hint" style="margin:0 0 8px">No content blocks. Add one below, or use only the Ask.</p>';
+  }
+  function buildQuestion(){
+    const q = { id: $('qId').value.trim(), title: $('qTitle').value.trim(),
+                blocks: qEdit.blocks.filter(b => !isEmptyBlock(b)).map(fromEditable),
+                ask: $('qAsk').value.trim(), rubric: $('qRubric').value.trim() };
+    if (!q.id) q.id = nextQid(new Set(questions.filter((_, i) => i !== qEdit.index).map(x => x.id)));
+    return q;
+  }
+  let previewTimer = null;
+  function updatePreview(){
+    clearTimeout(previewTimer);
+    const r = A.normalizeDriveFile({ questions: [buildQuestion()] });
+    const q = r.questions[0], pos = qEdit.index >= 0 ? qEdit.index + 1 : questions.length + 1;
+    $('qPreview').innerHTML = q ? A.renderQuestion(q, pos, { label: q.id, rubric: true }) : '';
+    A.highlight($('qPreview'));
+  }
+  const schedulePreview = () => { clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 150); };
+
+  $('qDialog').addEventListener('input', e => {
+    if (!qEdit) return;
+    qEdit.dirty = true; resetQCancel();
+    const f = e.target.dataset.f, holder = e.target.closest('.bedit');
+    if (f && holder) { const b = qEdit.blocks[+holder.dataset.bi]; b[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; }
+    schedulePreview();
+  });
+  $('qBlocks').addEventListener('keydown', e => {
+    // Tab inserts spaces in code blocks instead of leaving the field.
+    if (e.key === 'Tab' && !e.shiftKey && e.target.dataset.f === 'code') {
+      e.preventDefault();
+      e.target.setRangeText('    ', e.target.selectionStart, e.target.selectionEnd, 'end');
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  $('qBlocks').addEventListener('click', e => {
+    const b = e.target.closest('[data-bact]'); if (!b || b.disabled) return;
+    hideTip();
+    const i = +b.dataset.bi, list = qEdit.blocks;
+    if (b.dataset.bact === 'delete') list.splice(i, 1);
+    else { const j = b.dataset.bact === 'up' ? i - 1 : i + 1; [list[i], list[j]] = [list[j], list[i]]; }
+    qEdit.dirty = true; renderBlocks(); updatePreview();
+  });
+  document.querySelector('#qDialog .addblocks').addEventListener('click', e => {
+    const t = e.target.closest('[data-add]'); if (!t) return;
+    qEdit.blocks.push(Object.assign({ type: t.dataset.add }, clone(NEW_BLOCK[t.dataset.add])));
+    qEdit.dirty = true; renderBlocks(); updatePreview();
+    const last = $('qBlocks').lastElementChild.querySelector('textarea, input[type=text]');
+    if (last) last.focus();
+  });
+
+  $('qSave').addEventListener('click', () => {
+    const q = buildQuestion();
+    const r = A.normalizeDriveFile({ questions: [q] });
+    const errs = r.errors.map(m => m.replace(/^Question 1: /, '').replace(/^"title" is required\./, 'Enter a question title.')
+                                     .replace(/^needs "blocks", "prompt" or "ask"\./, 'Add some content or an Ask.'));
+    if (questions.some((o, i) => i !== qEdit.index && o.id === q.id)) errs.push('Another question already uses the ID "' + q.id + '".');
+    if (errs.length) { $('qErrs').innerHTML = errs.map(m => '<li>' + A.esc(m) + '</li>').join(''); $('qErrs').hidden = false; return; }
+    const list = questions.slice(), idx = qEdit.index >= 0 ? qEdit.index : list.length;
+    list[idx] = r.questions[0];
+    const added = qEdit.index < 0;
+    closeQuestion();
+    setQuestions(list);
+    $('qListStatus').className = 'status ok';
+    $('qListStatus').textContent = (added ? 'Added' : 'Saved') + ' question ' + (idx + 1) + '.';
+    const row = $('qList').querySelector('[data-qi="' + idx + '"].qrow');
+    if (row) { row.classList.add('flash'); row.scrollIntoView({ block: 'nearest' }); setTimeout(() => row.classList.remove('flash'), 1600); }
+  });
+
+  let qCancelTimer = null;
+  function resetQCancel(){ clearTimeout(qCancelTimer); qCancelTimer = null; $('qCancel').textContent = 'Cancel'; }
+  $('qCancel').addEventListener('click', () => {
+    if (qEdit && qEdit.dirty && !qCancelTimer) { $('qCancel').textContent = 'Discard changes?'; qCancelTimer = setTimeout(resetQCancel, 4000); return; }
+    resetQCancel(); closeQuestion();
+  });
+  $('qDialog').addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); $('qCancel').click(); } });
 
   // ---------- review ----------
   function buildDrive(){
@@ -427,8 +753,8 @@
     const count = parseInt($('fCount').value, 10);
     if (!title) errs.push('Enter a drive title.');
     if (!(duration >= 1 && duration <= 300)) errs.push('Time limit must be between 1 and 300 minutes.');
-    if (!bank) errs.push('Upload the questions JSON.');
-    else if (!(count >= 1 && count <= bank.questions.length)) errs.push('Questions per candidate must be between 1 and ' + bank.questions.length + '.');
+    if (!questions.length) errs.push('Add at least one question.');
+    else if (!(count >= 1 && count <= questions.length)) errs.push('Questions per candidate must be between 1 and ' + questions.length + '.');
     if (errs.length) return { errs };
     const d = {
       title,
@@ -439,7 +765,7 @@
       durationMinutes: duration,
       questionCount: count,
       shuffle: $('fShuffle').checked,
-      questions: bank.questions
+      questions: clone(questions)
     };
     if (editing) d.id = editing.id;
     return { drive: d };
@@ -460,7 +786,7 @@
       (d.role ? row('Role', A.esc(d.role)) : '') +
       row('Time limit', A.plural(d.durationMinutes, 'minute')) +
       row('Questions', d.questionCount === n ? 'All ' + n + ' questions' : d.questionCount + ' randomly picked from ' + n + ' for each candidate') +
-      row('Order', d.shuffle ? 'Shuffled per candidate' : 'As in the file') +
+      row('Order', d.shuffle ? 'Shuffled per candidate' : 'As listed') +
       (d.description ? row('Welcome text', A.paragraphs(d.description)) : '') +
       (d.instructions.length ? row('Instructions', '<ul>' + d.instructions.map(i => '<li>' + A.inline(i) + '</li>').join('') + '</ul>') : '') +
       (d.notice ? row('Notice', A.paragraphs(d.notice)) : '') +
@@ -487,6 +813,7 @@
       $('doneText').innerHTML = '<strong>' + A.esc(saved.title) + '</strong> (' + A.esc(saved.id) + ') was saved to Google Drive and is ' +
         (saved.status === 'open' ? '<strong>open</strong> — candidates can select it now.' : '<strong>closed</strong> — reopen it from the drive list when you are ready.');
       $('doneLink').value = candidateLink(saved.id);
+      dirty = false;
       show('doneCard');
       window.scrollTo({ top: 0 });
       refreshList();

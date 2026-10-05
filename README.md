@@ -54,9 +54,20 @@ in your Google Drive.
    - **Download results** (under the submission count) zips every submission for the drive,
      plus an `index.csv` with one row per candidate: time used, questions answered, focus
      events, and server verification status.
-3. **New drive → Details & questions:** fill in the details and upload (or paste) the
-   questions JSON. Any drive fields inside the file (title, time limit…) fill fields that
-   are still empty.
+3. **New drive / Edit → Details & questions.** The same screen is used for creating and editing:
+   - **Start from a JSON file** (top): upload, drag-and-drop or paste a question file. Its
+     questions go into the list below, and any drive fields in the file (title, time
+     limit…) fill fields that are still empty. When the drive already has questions, you
+     choose whether the file **replaces** them or is **added** to them; clashing IDs are
+     renumbered.
+   - **Drive details:** title, role, welcome text, instructions, notice, time limit.
+   - **Questions:** each question can be edited, moved up/down, or deleted (with *Undo*).
+     **+ Add question** creates one by hand. The question editor has a title, an ID,
+     content blocks (text, code, list, answer options, table) you can add, reorder and
+     remove, the Ask, and evaluator notes, with a live preview. Questions per candidate and
+     shuffle are set here too. "Questions per candidate" follows the bank size while it is
+     set to all of them.
+   - **Cancel** asks for a second click if there are unsaved changes.
 4. **Review & finalize:** a summary plus every question rendered exactly as candidates
    see it, with evaluator notes shown. **Finalize & save to Drive** writes
    `drives/drive-<id>.json` and gives you the candidate link. Untick "Open for candidates"
